@@ -57,15 +57,21 @@
             box-sizing: border-box;
         }
 
-        /* 맢닉, 초성, 범주선택을 각각 한 줄씩 차지하게 설정 */
-        #addNickname, #addPrefix, #addCategory { 
+        /* 🚀 위치 변경 핵심: 맢닉, 초성, 단어 입력창을 각각 한 줄씩 차지하게 설정 */
+        #addNickname, #addPrefix, #addWord { 
             flex-basis: 100%;
         }
         
+        /* 범주 선택창은 버튼과 공간을 나눠 갖도록 함 */
+        #addCategory {
+            flex: 2; /* 버튼보다 조금 더 넓게 */
+        }
+
         .add-form input:focus, .add-form select:focus {
             border-color: #00e676;
         }
         .add-form button {
+            flex: 1; /* 범주 선택창 옆에 붙음 */
             padding: 10px 20px;
             background-color: #00e676;
             color: #121212;
@@ -135,6 +141,7 @@
             <div class="section-title">새 단어 추가하기</div>
             <input type="text" id="addNickname" placeholder="맢닉(선택)" autocomplete="off">
             <input type="text" id="addPrefix" placeholder="초성 (예: ㄱㅅㅈㅇ)" autocomplete="off">
+            <input type="text" id="addWord" placeholder="단어 (예: 갱생짐인)" autocomplete="off">
             
             <select id="addCategory">
                 <option value="" disabled selected>범주 선택</option>
@@ -151,8 +158,6 @@
                 <option value="천문현상">천문현상</option> <option value="탈것">탈것</option> <option value="학용품">학용품</option>
                 <option value="화폐단위">화폐단위</option> <option value="기타">기타</option>
             </select>
-
-            <input type="text" id="addWord" placeholder="단어 (예: 갱생짐인)" autocomplete="off">
             <button id="addBtn">등록</button>
         </div>
         
@@ -4172,7 +4177,7 @@
 ㅂㅅ 바순
 ㅇㅈㅇㅂㅅ 우주왕복선
 ㅃ 뺨
-        `; // 기존 텍스트 데이터
+        `; 
 
         const dataMap = new Map();
 
@@ -4197,7 +4202,6 @@
             }
         }
 
-        // 기본 데이터 파싱 (생략 가능하나 구조 유지)
         let currentCategory = "기타";
         rawData.split('\n').forEach(line => {
             let text = line.trim();
@@ -4221,8 +4225,6 @@
                 if (change.type === "added" || change.type === "modified") {
                     const data = change.doc.data();
                     if (!data.prefix || !data.word) return; 
-
-                    // 💡 유저 추가 데이터는 '닉네임-선택한범주' 형태로 category에 저장
                     const displayTag = `${data.nickname || "익명"}-${data.category || "기타"}`;
                     addOrUpdateWord(data.prefix, data.word, displayTag, true);
                 }
