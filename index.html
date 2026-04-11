@@ -32,7 +32,7 @@
             background-color: #1e1e1e;
             padding: 15px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-top: 60px; /* 👈 예전의 margin-bottom이 사라지고 margin-top이 생겼어! */
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
@@ -87,7 +87,12 @@
             transition: border-color 0.2s;
         }
         .search-box:focus { border-color: #00e676; }
-        .result-list { list-style-type: none; padding: 0; margin: 0; }
+        .result-list { 
+            list-style-type: none; 
+            padding: 0; 
+            margin: 0; 
+            margin-bottom: 20px; /* 👈 결과창 아래쪽으로 빈 공간을 줌 */
+        }
         .result-item { 
             background-color: #1e1e1e; padding: 15px; margin-bottom: 10px; 
             border-radius: 8px; display: flex; align-items: center; font-size: 18px;
