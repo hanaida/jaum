@@ -45,7 +45,7 @@
             font-weight: bold;
             margin-bottom: 5px;
         }
-        .add-form input {
+        .add-form input, .add-form select {
             flex: 1;
             padding: 10px;
             background-color: #2a2a2a;
@@ -57,11 +57,12 @@
             box-sizing: border-box;
         }
 
-        #addNickname, #addPrefix { 
+        /* 맢닉, 초성, 범주선택을 각각 한 줄씩 차지하게 설정 */
+        #addNickname, #addPrefix, #addCategory { 
             flex-basis: 100%;
         }
         
-        .add-form input:focus {
+        .add-form input:focus, .add-form select:focus {
             border-color: #00e676;
         }
         .add-form button {
@@ -134,6 +135,23 @@
             <div class="section-title">새 단어 추가하기</div>
             <input type="text" id="addNickname" placeholder="맢닉(선택)" autocomplete="off">
             <input type="text" id="addPrefix" placeholder="초성 (예: ㄱㅅㅈㅇ)" autocomplete="off">
+            
+            <select id="addCategory">
+                <option value="" disabled selected>범주 선택</option>
+                <option value="가전">가전</option> <option value="고사성어">고사성어</option> <option value="과일">과일</option>
+                <option value="과학">과학</option> <option value="국가">국가</option> <option value="날씨">날씨</option>
+                <option value="도시">도시</option> <option value="동물">동물</option> <option value="마피아42">마피아42</option>
+                <option value="명소">명소</option> <option value="명작">명작</option> <option value="색깔">색깔</option>
+                <option value="속담">속담</option> <option value="수학">수학</option> <option value="스포츠">스포츠</option>
+                <option value="신체">신체</option> <option value="신화">신화</option> <option value="식물">식물</option>
+                <option value="악기">악기</option> <option value="양념">양념</option> <option value="역사">역사</option>
+                <option value="영화">영화</option> <option value="음료">음료</option> <option value="음식">음식</option>
+                <option value="음악">음악</option> <option value="의류">의류</option> <option value="장소">장소</option>
+                <option value="전통문화">전통문화</option> <option value="직업">직업</option> <option value="채소">채소</option>
+                <option value="천문현상">천문현상</option> <option value="탈것">탈것</option> <option value="학용품">학용품</option>
+                <option value="화폐단위">화폐단위</option> <option value="기타">기타</option>
+            </select>
+
             <input type="text" id="addWord" placeholder="단어 (예: 갱생짐인)" autocomplete="off">
             <button id="addBtn">등록</button>
         </div>
@@ -4154,7 +4172,7 @@
 ㅂㅅ 바순
 ㅇㅈㅇㅂㅅ 우주왕복선
 ㅃ 뺨
-        `;
+        `; // 기존 텍스트 데이터
 
         const dataMap = new Map();
 
@@ -4171,7 +4189,6 @@
             if (dataMap.has(uniqueKey)) {
                 const existingData = dataMap.get(uniqueKey);
                 const existingPriority = getPriority(existingData.category, existingData.isUser);
-
                 if (newPriority > existingPriority) {
                     dataMap.set(uniqueKey, { prefix, words: word, category, isUser });
                 }
@@ -4180,16 +4197,15 @@
             }
         }
 
+        // 기본 데이터 파싱 (생략 가능하나 구조 유지)
         let currentCategory = "기타";
         rawData.split('\n').forEach(line => {
             let text = line.trim();
             if (!text || text.includes('─')) return;
-            
             if (text.startsWith('[') && text.endsWith(']')) {
                 currentCategory = text.slice(1, -1);
                 return;
             }
-            
             const firstSpaceIndex = text.indexOf(' ');
             if (firstSpaceIndex !== -1) {
                 const prefix = text.substring(0, firstSpaceIndex).trim();
@@ -4204,14 +4220,13 @@
             snapshot.docChanges().forEach((change) => {
                 if (change.type === "added" || change.type === "modified") {
                     const data = change.doc.data();
-                    
-                    // 🛡️ 핵심 방어 코드 추가: 초성이나 단어 필드가 비어있으면 아예 등록하지 않고 무시함!
                     if (!data.prefix || !data.word) return; 
 
-                    addOrUpdateWord(data.prefix, data.word, data.nickname || "익명", true);
+                    // 💡 유저 추가 데이터는 '닉네임-선택한범주' 형태로 category에 저장
+                    const displayTag = `${data.nickname || "익명"}-${data.category || "기타"}`;
+                    addOrUpdateWord(data.prefix, data.word, displayTag, true);
                 }
             });
-            
             dataList = Array.from(dataMap.values());
             const currentQuery = document.getElementById('searchInput').value;
             if(currentQuery) renderResults(currentQuery);
@@ -4221,32 +4236,26 @@
             let nickname = document.getElementById('addNickname').value.trim();
             const prefix = document.getElementById('addPrefix').value.trim();
             const word = document.getElementById('addWord').value.trim();
+            const category = document.getElementById('addCategory').value;
 
-            if (!prefix || !word) {
-                alert("초성과 단어를 모두 입력해주세요!");
-                return;
-            }
-
-            if (!nickname) {
-                nickname = "익명";
-            }
+            if (!prefix || !word) { alert("초성과 단어를 모두 입력해주세요!"); return; }
+            if (!category) { alert("범주를 선택해주세요!"); return; }
+            if (!nickname) nickname = "익명";
 
             try {
                 await addDoc(collection(db, "words"), {
-                    category: "유저 추가", 
+                    category: category, 
                     prefix: prefix,
                     word: word,
                     nickname: nickname,
                     timestamp: new Date()
                 });
-                
                 alert(`'${word}' 단어가 성공적으로 등록되었습니다!`);
                 document.getElementById('addNickname').value = '';
                 document.getElementById('addPrefix').value = '';
                 document.getElementById('addWord').value = '';
-                
+                document.getElementById('addCategory').value = '';
             } catch (e) {
-                console.error("추가 실패:", e);
                 alert("단어 추가에 실패했습니다.");
             }
         });
@@ -4263,27 +4272,14 @@
                 return;
             }
 
-            const filtered = dataList.filter(item => {
-                // 🛡️ 2차 방어: 혹시 모를 에러 방지를 위해 값을 한 번 더 확인함
-                const safePrefix = item.prefix || "";
-                const safeWords = item.words || "";
-                return safePrefix.includes(lowerQuery) || safeWords.includes(query);
-            });
+            const filtered = dataList.filter(item => (item.prefix || "").includes(lowerQuery) || (item.words || "").includes(query));
 
             filtered.sort((a, b) => {
-                const safePrefixA = a.prefix || "";
-                const safePrefixB = b.prefix || "";
-                
-                const lenA = safePrefixA.replace(/\s/g, '').length;
-                const lenB = safePrefixB.replace(/\s/g, '').length;
-            
+                const lenA = (a.prefix || "").replace(/\s/g, '').length;
+                const lenB = (b.prefix || "").replace(/\s/g, '').length;
                 if (lenA !== lenB) return lenA - lenB;
-            
-                if (a.isUser !== b.isUser) {
-                    return a.isUser ? 1 : -1; 
-                }
-            
-                return safePrefixA.localeCompare(safePrefixB);
+                if (a.isUser !== b.isUser) return a.isUser ? 1 : -1; 
+                return (a.prefix || "").localeCompare(b.prefix || "");
             });
 
             if (filtered.length === 0) {
@@ -4294,9 +4290,7 @@
             filtered.forEach(item => {
                 const li = document.createElement('li');
                 li.className = 'result-item';
-
                 const categoryClass = item.isUser ? 'category user-added' : 'category';
-                
                 li.innerHTML = `
                     <span class="prefix">${item.prefix}</span>
                     <span class="words">${item.words}</span>
@@ -4306,9 +4300,7 @@
             });
         }
 
-        searchInput.addEventListener('input', (e) => {
-            renderResults(e.target.value);
-        });
+        searchInput.addEventListener('input', (e) => renderResults(e.target.value));
     </script>
 </body>
 </html>
