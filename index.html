@@ -3770,7 +3770,10 @@
 ㅃ 뺨
         `;
 
-        // 데이터를 사용하기 좋게 배열로 정제합니다.
+        // 중복을 걸러내기 위한 Set
+        const uniqueSet = new Set();
+
+        // 데이터를 사용하기 좋게 배열로 정제하면서 중복 제거
         const dataList = rawData.split('\n')
             .map(line => line.trim())
             .filter(line => line.length > 0 && line.indexOf(' ') !== -1)
@@ -3780,6 +3783,15 @@
                     prefix: line.substring(0, firstSpaceIdx).trim(),
                     words: line.substring(firstSpaceIdx + 1).trim()
                 };
+            })
+            .filter(item => {
+                // 초성과 단어를 합쳐서 고유 키로 생성 (예: "ㄱㄱ_고기압")
+                const uniqueKey = item.prefix + "_" + item.words;
+                if (uniqueSet.has(uniqueKey)) {
+                    return false; // 이미 있는 조합이면 버림
+                }
+                uniqueSet.add(uniqueKey); // 처음 보는 조합이면 Set에 기록
+                return true; // 배열에 추가
             });
 
         const searchInput = document.getElementById('searchInput');
@@ -3797,21 +3809,21 @@
                 return;
             }
 
-            // 조건 1: 사용자가 입력한 문자열이 주제+초성(prefix)에 포함되는가? (예: 과ㅅㄱ)
-            // 조건 2: 사용자가 입력한 문자열이 단어 자체에 포함되는가? (예: 사과)
+            // 조건 1: 사용자가 입력한 문자열이 주제+초성(prefix)에 포함되는가?
+            // 조건 2: 사용자가 입력한 문자열이 단어 자체에 포함되는가?
             const filtered = dataList.filter(item => {
                 return item.prefix.includes(lowerQuery) || item.words.includes(query);
             });
 
             filtered.sort((a, b) => {
-    const lenA = a.prefix.replace(/\s/g, '').length;
-    const lenB = b.prefix.replace(/\s/g, '').length;
-    
-    if (lenA === lenB) {
-        return a.prefix.localeCompare(b.prefix); 
-    }
-    return lenA - lenB; 
-});
+                const lenA = a.prefix.replace(/\s/g, '').length;
+                const lenB = b.prefix.replace(/\s/g, '').length;
+                
+                if (lenA === lenB) {
+                    return a.prefix.localeCompare(b.prefix); 
+                }
+                return lenA - lenB; 
+            });
 
             if (filtered.length === 0) {
                 resultList.innerHTML = '<div class="empty-msg">일치하는 단어가 없습니다.</div>';
