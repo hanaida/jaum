@@ -4118,7 +4118,7 @@
         
 
 
-[기
+[기타]
 ㄴㅇㄱㅂㄷ 노인과바다
 ㅎㅇㄹㅂㅇㄲ 한여름밤의꿈
 ㅊㅇㅇㅇㅎㄱㄷㄱㅈㅅㅋ 추억의영화감독기자스킨
@@ -4154,34 +4154,34 @@
 
         const dataMap = new Map();
 
-        function getPriority(category) {
-            if (category === "유저 추가") return 1; 
+        // 💡 1. 꼬리표(isUser)를 받아서 우선순위를 정하도록 수정
+        function getPriority(category, isUser) {
+            if (isUser) return 1; 
             if (category === "기타") return 2;      
             return 3;                               
         }
 
-        // 💡 닉네임 데이터도 함께 받아서 저장하도록 수정
-        function addOrUpdateWord(prefix, word, category, nickname = "") {
+        // 💡 2. nickname 변수 대신 isUser(유저 추가 여부) 변수를 받도록 수정
+        function addOrUpdateWord(prefix, word, category, isUser = false) {
             const uniqueKey = prefix + "_" + word;
-            const newPriority = getPriority(category);
+            const newPriority = getPriority(category, isUser);
 
             if (dataMap.has(uniqueKey)) {
                 const existingData = dataMap.get(uniqueKey);
-                const existingPriority = getPriority(existingData.category);
+                const existingPriority = getPriority(existingData.category, existingData.isUser);
 
                 if (newPriority > existingPriority) {
-                    dataMap.set(uniqueKey, { prefix, words: word, category, nickname });
+                    dataMap.set(uniqueKey, { prefix, words: word, category, isUser });
                 }
             } else {
-                dataMap.set(uniqueKey, { prefix, words: word, category, nickname });
+                dataMap.set(uniqueKey, { prefix, words: word, category, isUser });
             }
         }
 
         let currentCategory = "기타";
         rawData.split('\n').forEach(line => {
             let text = line.trim();
-            if (!text) return;
-            if (text.includes('─')) return;
+            if (!text || text.includes('─')) return;
             
             if (text.startsWith('[') && text.endsWith(']')) {
                 currentCategory = text.slice(1, -1);
@@ -4192,7 +4192,7 @@
             if (firstSpaceIndex !== -1) {
                 const prefix = text.substring(0, firstSpaceIndex).trim();
                 const word = text.substring(firstSpaceIndex + 1).trim();
-                addOrUpdateWord(prefix, word, currentCategory); // 기존 단어는 닉네임 없음
+                addOrUpdateWord(prefix, word, currentCategory, false);
             }
         });
 
@@ -4202,7 +4202,6 @@
             snapshot.docChanges().forEach((change) => {
                 if (change.type === "added" || change.type === "modified") {
                     const data = change.doc.data();
-                    // 💡 파이어베이스에서 닉네임 데이터도 가져옴
                     addOrUpdateWord(data.prefix, data.word, data.nickname || "익명", true);
                 }
             });
@@ -4222,15 +4221,13 @@
                 return;
             }
 
-            // 💡 닉네임을 비워두면 자동으로 '익명' 처리
             if (!nickname) {
                 nickname = "익명";
             }
 
             try {
-                // 💡 클라우드에 닉네임도 같이 전송
                 await addDoc(collection(db, "words"), {
-                    category: "유저 추가", 
+                    category: "유저 추가", // 파이어베이스에는 남겨두지만, 앱에서는 nickname을 범주로 씀
                     prefix: prefix,
                     word: word,
                     nickname: nickname,
@@ -4264,20 +4261,16 @@
                 return item.prefix.includes(lowerQuery) || item.words.includes(query);
             });
 
-            // 🚀 핵심 정렬 로직 (순서대로 심사함)
             filtered.sort((a, b) => {
                 const lenA = a.prefix.replace(/\s/g, '').length;
                 const lenB = b.prefix.replace(/\s/g, '').length;
             
-                // [1순위 심사] 글자 수가 다르면? 짧은 게 무조건 위로! (예: 2글자 -> 3글자)
                 if (lenA !== lenB) return lenA - lenB;
             
-                // [2순위 심사] 글자 수가 같다면? 유저가 추가한 단어(isUser)를 뒤로 보냄!
                 if (a.isUser !== b.isUser) {
-                    return a.isUser ? 1 : -1; // a가 닉네임 단어면 뒤로(+1) 밀어버림
+                    return a.isUser ? 1 : -1; 
                 }
             
-                // [3순위 심사] 둘 다 일반 단어거나, 둘 다 닉네임 단어면? 가나다순으로!
                 return a.prefix.localeCompare(b.prefix);
             });
 
@@ -4293,18 +4286,11 @@
                 // 유저가 추가한 단어(isUser)면 'user-added'라는 빨간색 옷을 입힘!
                 const categoryClass = item.isUser ? 'category user-added' : 'category';
                 
-                
-                
-                // 💡 닉네임이 있는 경우(유저 추가)와 없는 경우(기존 단어)를 다르게 표시
-                let displayCategory = `[${item.category}]`;
-                if (item.nickname) {
-                    displayCategory = `[${item.category} - ${item.nickname}]`;
-                }
-
+                // 💡 3. 충돌나던 옛날 코드(displayCategory)를 싹 지우고 한 번에 깔끔하게 넣음!
                 li.innerHTML = `
                     <span class="prefix">${item.prefix}</span>
                     <span class="words">${item.words}</span>
-                    <span class="category">${displayCategory}</span>
+                    <span class="${categoryClass}">[${item.category}]</span>
                 `;
                 resultList.appendChild(li);
             });
