@@ -97,7 +97,7 @@
             list-style-type: none; 
             padding: 0; 
             margin: 0; 
-            margin-bottom: 20px; /* 👈 결과창 아래쪽으로 빈 공간을 줌 */
+            margin-bottom: 20px;
         }
         .result-item { 
             background-color: #1e1e1e; padding: 15px; margin-bottom: 10px; 
@@ -110,7 +110,6 @@
             padding: 4px 8px; border-radius: 6px; margin-left: 10px; border: 1px solid #444;
             white-space: nowrap;
         }
-        /* 수정 후 (초록색) */
         .category.user-added {
             color: #00e676;
             border-color: #00e676;
@@ -145,20 +144,18 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // 🚨 1. 여기에 네 프로젝트의 firebaseConfig를 덮어쓰세요!
         const firebaseConfig = {
-    apiKey: "AIzaSyDyskFIsk3_OeFTFOnMVlgzg2opZmAy8-c",
-    authDomain: "jaum-5f8b3.firebaseapp.com",
-    projectId: "jaum-5f8b3",
-    storageBucket: "jaum-5f8b3.firebasestorage.app",
-    messagingSenderId: "455475916718",
-    appId: "1:455475916718:web:96198afe076cfaee7d223f"
-  };
+            apiKey: "AIzaSyDyskFIsk3_OeFTFOnMVlgzg2opZmAy8-c",
+            authDomain: "jaum-5f8b3.firebaseapp.com",
+            projectId: "jaum-5f8b3",
+            storageBucket: "jaum-5f8b3.firebasestorage.app",
+            messagingSenderId: "455475916718",
+            appId: "1:455475916718:web:96198afe076cfaee7d223f"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 2. 여기에 기존 단어장을 붙여넣으세요!
         const rawData = `
 [악기]
 ㅂ 북
@@ -4161,14 +4158,12 @@
 
         const dataMap = new Map();
 
-        // 💡 1. 꼬리표(isUser)를 받아서 우선순위를 정하도록 수정
         function getPriority(category, isUser) {
             if (isUser) return 1; 
             if (category === "기타") return 2;      
             return 3;                               
         }
 
-        // 💡 2. nickname 변수 대신 isUser(유저 추가 여부) 변수를 받도록 수정
         function addOrUpdateWord(prefix, word, category, isUser = false) {
             const uniqueKey = prefix + "_" + word;
             const newPriority = getPriority(category, isUser);
@@ -4209,6 +4204,10 @@
             snapshot.docChanges().forEach((change) => {
                 if (change.type === "added" || change.type === "modified") {
                     const data = change.doc.data();
+                    
+                    // 🛡️ 핵심 방어 코드 추가: 초성이나 단어 필드가 비어있으면 아예 등록하지 않고 무시함!
+                    if (!data.prefix || !data.word) return; 
+
                     addOrUpdateWord(data.prefix, data.word, data.nickname || "익명", true);
                 }
             });
@@ -4234,7 +4233,7 @@
 
             try {
                 await addDoc(collection(db, "words"), {
-                    category: "유저 추가", // 파이어베이스에는 남겨두지만, 앱에서는 nickname을 범주로 씀
+                    category: "유저 추가", 
                     prefix: prefix,
                     word: word,
                     nickname: nickname,
@@ -4265,12 +4264,18 @@
             }
 
             const filtered = dataList.filter(item => {
-                return item.prefix.includes(lowerQuery) || item.words.includes(query);
+                // 🛡️ 2차 방어: 혹시 모를 에러 방지를 위해 값을 한 번 더 확인함
+                const safePrefix = item.prefix || "";
+                const safeWords = item.words || "";
+                return safePrefix.includes(lowerQuery) || safeWords.includes(query);
             });
 
             filtered.sort((a, b) => {
-                const lenA = a.prefix.replace(/\s/g, '').length;
-                const lenB = b.prefix.replace(/\s/g, '').length;
+                const safePrefixA = a.prefix || "";
+                const safePrefixB = b.prefix || "";
+                
+                const lenA = safePrefixA.replace(/\s/g, '').length;
+                const lenB = safePrefixB.replace(/\s/g, '').length;
             
                 if (lenA !== lenB) return lenA - lenB;
             
@@ -4278,7 +4283,7 @@
                     return a.isUser ? 1 : -1; 
                 }
             
-                return a.prefix.localeCompare(b.prefix);
+                return safePrefixA.localeCompare(safePrefixB);
             });
 
             if (filtered.length === 0) {
@@ -4290,10 +4295,8 @@
                 const li = document.createElement('li');
                 li.className = 'result-item';
 
-                // 유저가 추가한 단어(isUser)면 'user-added'라는 빨간색 옷을 입힘!
                 const categoryClass = item.isUser ? 'category user-added' : 'category';
                 
-                // 💡 3. 충돌나던 옛날 코드(displayCategory)를 싹 지우고 한 번에 깔끔하게 넣음!
                 li.innerHTML = `
                     <span class="prefix">${item.prefix}</span>
                     <span class="words">${item.words}</span>
