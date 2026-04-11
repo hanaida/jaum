@@ -4277,8 +4277,8 @@ nickname: nickname,
 timestamp: new Date()
 });
 alert(`'${word}' 단어가 성공적으로 등록되었습니다!`);
-                document.getElementById('addNickname').value = '';
-document.getElementById('addWord').value = '';
+document.getElementById('addPrefix').value = '';     // 초성은 비우기
+document.getElementById('addWord').value = '';       // 단어는 비우기
 document.getElementById('addCategory').value = '';
 } catch (e) {
 alert("단어 추가에 실패했습니다.");
