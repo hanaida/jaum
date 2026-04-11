@@ -4204,25 +4204,28 @@ const rawData = `
 
 const dataMap = new Map();
 
-function getPriority(category, isUser) {
-if (isUser) return 1; 
-if (category === "기타") return 2;      
-return 3;                               
+function getPriority(category, isUser, nickname) {
+    if (isUser && nickname === "갱생짐인") return 4;
+    if (isUser) return 1;
+    if (category === "기타") return 2;
+    return 3;                    
 }
 
-function addOrUpdateWord(prefix, word, category, isUser = false) {
-const uniqueKey = prefix + "_" + word;
-const newPriority = getPriority(category, isUser);
+function addOrUpdateWord(prefix, word, category, isUser = false, nickname = "") {
+    const uniqueKey = prefix + "_" + word;
+    const newPriority = getPriority(category, isUser, nickname);
 
-if (dataMap.has(uniqueKey)) {
-const existingData = dataMap.get(uniqueKey);
-const existingPriority = getPriority(existingData.category, existingData.isUser);
-if (newPriority > existingPriority) {
-dataMap.set(uniqueKey, { prefix, words: word, category, isUser });
-}
-} else {
-dataMap.set(uniqueKey, { prefix, words: word, category, isUser });
-}
+    if (dataMap.has(uniqueKey)) {
+        const existingData = dataMap.get(uniqueKey);
+        const existingPriority = getPriority(existingData.category, existingData.isUser, existingData.nickname);
+        
+        // 🚀 갱생짐인의 데이터(4)가 기존 데이터(1~3)보다 크므로 덮어씌워짐!
+        if (newPriority >= existingPriority) {
+            dataMap.set(uniqueKey, { prefix, words: word, category, isUser, nickname });
+        }
+    } else {
+        dataMap.set(uniqueKey, { prefix, words: word, category, isUser, nickname });
+    }
 }
 
 let currentCategory = "기타";
@@ -4244,19 +4247,20 @@ addOrUpdateWord(prefix, word, currentCategory, false);
 let dataList = Array.from(dataMap.values());
 
 onSnapshot(collection(db, "words"), (snapshot) => {
-snapshot.docChanges().forEach((change) => {
-if (change.type === "added" || change.type === "modified") {
-const data = change.doc.data();
-if (!data.prefix || !data.word) return; 
-const displayTag = `${data.category || "기타"}`;
-addOrUpdateWord(data.prefix, data.word, displayTag, true);
-}
+    snapshot.docChanges().forEach((change) => {
+        if (change.type === "added" || change.type === "modified") {
+            const data = change.doc.data();
+            if (!data.prefix || !data.word) return; 
+            const displayTag = `${data.category || "기타"}`;
+            
+            // 🚀 닉네임(data.nickname) 정보도 같이 함수에 전달!
+            addOrUpdateWord(data.prefix, data.word, displayTag, true, data.nickname);
+        }
+    });
+    dataList = Array.from(dataMap.values());
+    const currentQuery = document.getElementById('searchInput').value;
+    if(currentQuery) renderResults(currentQuery);
 });
-dataList = Array.from(dataMap.values());
-const currentQuery = document.getElementById('searchInput').value;
-if(currentQuery) renderResults(currentQuery);
-});
-
 document.getElementById('addBtn').addEventListener('click', async () => {
 let nickname = document.getElementById('addNickname').value.trim();
 const prefix = document.getElementById('addPrefix').value.trim();
