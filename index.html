@@ -4115,11 +4115,11 @@
 ㅃ 뺨
         `;
 
-        const dataList = [];
-        const uniqueSet = new Set();
+        // 중복 및 카테고리 우선순위 처리를 위한 Map
+        const dataMap = new Map();
         let currentCategory = "기타"; // 기본 카테고리
 
-        // 원본 데이터를 자동으로 분석해서 배열로 정제
+        // 원본 데이터를 자동으로 분석해서 Map에 저장
         rawData.split('\n').forEach(line => {
             let text = line.trim();
             if (!text) return; // 빈 줄 무시
@@ -4134,17 +4134,29 @@
             }
 
             // 3. 단어와 초성 추출 (초성 띄어쓰기 단어 형태)
-            // 첫 번째 띄어쓰기를 기준으로 앞은 초성, 뒤는 단어로 나눔
             const firstSpaceIndex = text.indexOf(' ');
             if (firstSpaceIndex !== -1) {
                 const prefix = text.substring(0, firstSpaceIndex).trim();
                 const word = text.substring(firstSpaceIndex + 1).trim();
 
-                // 중복 방지 로직
                 const uniqueKey = prefix + "_" + word;
-                if (!uniqueSet.has(uniqueKey)) {
-                    uniqueSet.add(uniqueKey);
-                    dataList.push({
+
+                // 이미 등록된 단어인지 확인
+                if (dataMap.has(uniqueKey)) {
+                    const existingData = dataMap.get(uniqueKey);
+                    
+                    // 기존에 등록된 범주가 '기타'이고, 현재 넣으려는 범주가 '기타'가 아니면 덮어쓰기!
+                    if (existingData.category === "기타" && currentCategory !== "기타") {
+                        dataMap.set(uniqueKey, {
+                            prefix: prefix,
+                            words: word,
+                            category: currentCategory
+                        });
+                    }
+                    // 그 외의 경우 (이미 구체적인 범주에 있거나 둘 다 '기타'인 경우)는 무시
+                } else {
+                    // 처음 등장하는 단어는 그대로 저장
+                    dataMap.set(uniqueKey, {
                         prefix: prefix,
                         words: word,
                         category: currentCategory
@@ -4152,6 +4164,9 @@
                 }
             }
         });
+
+        // Map에 저장된 데이터를 검색용 배열로 변환
+        const dataList = Array.from(dataMap.values());
 
         const searchInput = document.getElementById('searchInput');
         const resultList = document.getElementById('resultList');
