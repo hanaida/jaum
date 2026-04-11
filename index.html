@@ -52,7 +52,7 @@
             border: 1px solid #444;
             color: #fff;
             border-radius: 4px;
-            min-width: 120px;
+            min-width: 100px;
             outline: none;
         }
         .add-form input:focus {
@@ -102,6 +102,7 @@
         .category {
             font-size: 13px; color: #aaa; background-color: #2a2a2a;
             padding: 4px 8px; border-radius: 6px; margin-left: 10px; border: 1px solid #444;
+            white-space: nowrap;
         }
         .empty-msg { text-align: center; color: #666; margin-top: 20px; }
     </style>
@@ -119,6 +120,7 @@
 
         <div class="add-form" id="addForm">
             <div class="section-title">새 단어 추가하기</div>
+            <input type="text" id="addNickname" placeholder="맢닉(선택)" autocomplete="off">
             <input type="text" id="addPrefix" placeholder="초성 (예: ㄱㅅㅈㅇ)" autocomplete="off">
             <input type="text" id="addWord" placeholder="단어 (예: 갱생짐인)" autocomplete="off">
             <button id="addBtn">등록</button>
@@ -4146,15 +4148,14 @@
 
         const dataMap = new Map();
 
-        // 💡 우선순위 판별 함수 (숫자가 클수록 우선순위 높음)
         function getPriority(category) {
-            if (category === "유저 추가") return 1; // 최하위
-            if (category === "기타") return 2;      // 중간
-            return 3;                               // 최상위 (과학, 수학 등 나머지 모든 범주)
+            if (category === "유저 추가") return 1; 
+            if (category === "기타") return 2;      
+            return 3;                               
         }
 
-        // 💡 단어 추가/수정 공통 로직 (우선순위를 비교해서 더 높은 범주만 저장)
-        function addOrUpdateWord(prefix, word, category) {
+        // 💡 닉네임 데이터도 함께 받아서 저장하도록 수정
+        function addOrUpdateWord(prefix, word, category, nickname = "") {
             const uniqueKey = prefix + "_" + word;
             const newPriority = getPriority(category);
 
@@ -4162,17 +4163,14 @@
                 const existingData = dataMap.get(uniqueKey);
                 const existingPriority = getPriority(existingData.category);
 
-                // 새로 들어온 범주의 우선순위가 더 높을 때만 덮어쓰기
                 if (newPriority > existingPriority) {
-                    dataMap.set(uniqueKey, { prefix, words: word, category });
+                    dataMap.set(uniqueKey, { prefix, words: word, category, nickname });
                 }
             } else {
-                // 처음 등록되는 단어면 그냥 저장
-                dataMap.set(uniqueKey, { prefix, words: word, category });
+                dataMap.set(uniqueKey, { prefix, words: word, category, nickname });
             }
         }
 
-        // 3. 기존 단어장(rawData) 기본 세팅
         let currentCategory = "기타";
         rawData.split('\n').forEach(line => {
             let text = line.trim();
@@ -4188,33 +4186,28 @@
             if (firstSpaceIndex !== -1) {
                 const prefix = text.substring(0, firstSpaceIndex).trim();
                 const word = text.substring(firstSpaceIndex + 1).trim();
-                
-                // 공통 함수로 전달
-                addOrUpdateWord(prefix, word, currentCategory);
+                addOrUpdateWord(prefix, word, currentCategory); // 기존 단어는 닉네임 없음
             }
         });
 
         let dataList = Array.from(dataMap.values());
 
-        // 🚀 4. 파이어베이스 데이터 실시간 연동
         onSnapshot(collection(db, "words"), (snapshot) => {
             snapshot.docChanges().forEach((change) => {
                 if (change.type === "added" || change.type === "modified") {
                     const data = change.doc.data();
-                    
-                    // 클라우드에서 온 데이터는 항상 '유저 추가'로 처리 (우선순위 1)
-                    addOrUpdateWord(data.prefix, data.word, "유저 추가");
+                    // 💡 파이어베이스에서 닉네임 데이터도 가져옴
+                    addOrUpdateWord(data.prefix, data.word, "유저 추가", data.nickname);
                 }
             });
             
             dataList = Array.from(dataMap.values());
-            
             const currentQuery = document.getElementById('searchInput').value;
             if(currentQuery) renderResults(currentQuery);
         });
 
-        // ✍️ 5. 새 단어 등록 버튼 기능
         document.getElementById('addBtn').addEventListener('click', async () => {
+            let nickname = document.getElementById('addNickname').value.trim();
             const prefix = document.getElementById('addPrefix').value.trim();
             const word = document.getElementById('addWord').value.trim();
 
@@ -4223,16 +4216,23 @@
                 return;
             }
 
+            // 💡 닉네임을 비워두면 자동으로 '익명' 처리
+            if (!nickname) {
+                nickname = "익명";
+            }
+
             try {
-                // 입력칸에서 범주를 아예 지웠으므로 클라우드에는 무조건 '유저 추가'로 저장됨
+                // 💡 클라우드에 닉네임도 같이 전송
                 await addDoc(collection(db, "words"), {
                     category: "유저 추가", 
                     prefix: prefix,
                     word: word,
+                    nickname: nickname,
                     timestamp: new Date()
                 });
                 
                 alert(`'${word}' 단어가 성공적으로 등록되었습니다!`);
+                document.getElementById('addNickname').value = '';
                 document.getElementById('addPrefix').value = '';
                 document.getElementById('addWord').value = '';
                 
@@ -4242,7 +4242,6 @@
             }
         });
 
-        // 🔍 검색 및 렌더링 함수
         const searchInput = document.getElementById('searchInput');
         const resultList = document.getElementById('resultList');
 
@@ -4274,10 +4273,17 @@
             filtered.forEach(item => {
                 const li = document.createElement('li');
                 li.className = 'result-item';
+                
+                // 💡 닉네임이 있는 경우(유저 추가)와 없는 경우(기존 단어)를 다르게 표시
+                let displayCategory = `[${item.category}]`;
+                if (item.nickname) {
+                    displayCategory = `[${item.category} - ${item.nickname}]`;
+                }
+
                 li.innerHTML = `
                     <span class="prefix">${item.prefix}</span>
                     <span class="words">${item.words}</span>
-                    <span class="category">[${item.category}]</span>
+                    <span class="category">${displayCategory}</span>
                 `;
                 resultList.appendChild(li);
             });
