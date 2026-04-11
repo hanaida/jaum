@@ -4249,7 +4249,7 @@ snapshot.docChanges().forEach((change) => {
 if (change.type === "added" || change.type === "modified") {
 const data = change.doc.data();
 if (!data.prefix || !data.word) return; 
-const displayTag = `${data.nickname || "익명"}-${data.category || "기타"}`;
+const displayTag = `${data.category || "기타"}`;
 addOrUpdateWord(data.prefix, data.word, displayTag, true);
 }
 });
