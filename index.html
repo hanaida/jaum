@@ -1,217 +1,209 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>자음의숲 검색기</title>
-    <style>
-        body { 
-            font-family: 'Pretendard', 'Malgun Gothic', sans-serif; 
-            background-color: #121212; 
-            color: #e0e0e0; 
-            padding: 20px; 
-            margin: 0; 
-        }
-        .container { 
-            max-width: 600px; 
-            margin: 0 auto; 
-        }
-        h1 { 
-            text-align: center; 
-            color: #00e676; 
-            margin-bottom: 5px;
-        }
-        .subtitle {
-            text-align: center;
-            color: #888;
-            font-size: 14px;
-            margin-bottom: 25px;
-        }
-        /* 새 단어 추가 폼 디자인 */
-        .add-form {
-            background-color: #1e1e1e;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 40px; 
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            border: 1px solid #333;
-        }
-        .section-title {
-            width: 100%;
-            font-size: 14px;
-            color: #00e676;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .add-form input, .add-form select {
-            flex: 1;
-            padding: 10px;
-            background-color: #2a2a2a;
-            border: 1px solid #444;
-            color: #fff;
-            border-radius: 4px;
-            min-width: 100px;
-            outline: none;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>자음의숲 검색기</title>
+<style>
+body { 
+font-family: 'Pretendard', 'Malgun Gothic', sans-serif; 
+background-color: #121212; 
+color: #e0e0e0; 
+padding: 20px; 
+margin: 0; 
+}
+.container { 
+max-width: 600px; 
+margin: 0 auto; 
+}
+h1 { 
+text-align: center; 
+color: #00e676; 
+margin-bottom: 5px;
+}
+.subtitle {
+text-align: center;
+color: #888;
+font-size: 14px;
+margin-bottom: 25px;
+}
+/* 새 단어 추가 폼 디자인 */
+.add-form {
+background-color: #1e1e1e;
+padding: 15px;
+border-radius: 8px;
+margin-top: 40px; 
+display: flex;
+gap: 10px;
+flex-wrap: wrap;
+border: 1px solid #333;
+}
+.section-title {
+width: 100%;
+font-size: 14px;
+color: #00e676;
+font-weight: bold;
+margin-bottom: 5px;
+}
+.add-form input, .add-form select {
+flex: 1;
+padding: 10px;
+background-color: #2a2a2a;
+border: 1px solid #444;
+color: #fff;
+border-radius: 4px;
+min-width: 100px;
+outline: none;
+box-sizing: border-box;
+}
 
-        /* 🚀 위치 변경 핵심: 맢닉, 초성, 단어 입력창을 각각 한 줄씩 차지하게 설정 */
-        #addNickname, #addPrefix, #addWord { 
-            flex-basis: 100%;
-        }
-        
-        /* 범주 선택창은 버튼과 공간을 나눠 갖도록 함 */
-        #addCategory {
-            flex: 2; /* 버튼보다 조금 더 넓게 */
-        }
+/* 🚀 위치 변경 핵심: 맢닉, 초성, 단어 입력창을 각각 한 줄씩 차지하게 설정 */
+#addNickname, #addPrefix, #addWord { 
+flex-basis: 100%;
+}
 
-        .add-form input:focus, .add-form select:focus {
-            border-color: #00e676;
-        }
-        .add-form button {
-            flex: 1; /* 범주 선택창 옆에 붙음 */
-            padding: 10px 20px;
-            background-color: #00e676;
-            color: #121212;
-            border: none;
-            font-weight: bold;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .add-form button:hover {
-            background-color: #00c853;
-        }
-        /* 검색창 및 결과 리스트 디자인 */
-        .search-box { 
-            width: 100%; 
-            padding: 15px; 
-            font-size: 20px; 
-            font-weight: bold;
-            border: 2px solid #333; 
-            border-radius: 8px; 
-            background-color: #1e1e1e; 
-            color: #fff; 
-            margin-bottom: 20px; 
-            box-sizing: border-box; 
-            outline: none; 
-            transition: border-color 0.2s;
-        }
-        .search-box:focus { border-color: #00e676; }
-        .result-list { 
-            list-style-type: none; 
-            padding: 0; 
-            margin: 0; 
-            margin-bottom: 20px;
-        }
-        .result-item { 
-            background-color: #1e1e1e; padding: 15px; margin-bottom: 10px; 
-            border-radius: 8px; display: flex; align-items: center; font-size: 18px;
-        }
-        .prefix { 
-            font-weight: bold; 
-            color: #e0e0e0; /* 기본은 흰색 계열 */
-            margin-right: 15px; 
-            min-width: 50px; 
-        }
-        .highlight {
-            color: #00e676;
-        .words { flex-grow: 1; word-break: keep-all; color: #fff; }
-        .category {
-            font-size: 13px; color: #aaa; background-color: #2a2a2a;
-            padding: 4px 8px; border-radius: 6px; margin-left: 10px; border: 1px solid #444;
-            white-space: nowrap;
-        }
-        .category.user-added {
-            color: #00e676;
-            border-color: #00e676;
-            background-color: rgba(0, 230, 118, 0.1);
-            font-weight: bold;
-        }
-        .empty-msg { text-align: center; color: #666; margin-top: 20px; }
+/* 범주 선택창은 버튼과 공간을 나눠 갖도록 함 */
+#addCategory {
+flex: 2; /* 버튼보다 조금 더 넓게 */
+}
 
-    </style>
+.add-form input:focus, .add-form select:focus {
+border-color: #00e676;
+}
+.add-form button {
+flex: 1; /* 범주 선택창 옆에 붙음 */
+padding: 10px 20px;
+background-color: #00e676;
+color: #121212;
+border: none;
+font-weight: bold;
+border-radius: 4px;
+cursor: pointer;
+transition: background-color 0.2s;
+}
+.add-form button:hover {
+background-color: #00c853;
+}
+/* 검색창 및 결과 리스트 디자인 */
+.search-box { 
+width: 100%; 
+padding: 15px; 
+font-size: 20px; 
+font-weight: bold;
+border: 2px solid #333; 
+border-radius: 8px; 
+background-color: #1e1e1e; 
+color: #fff; 
+margin-bottom: 20px; 
+box-sizing: border-box; 
+outline: none; 
+transition: border-color 0.2s;
+}
+.search-box:focus { border-color: #00e676; }
+.result-list { 
+list-style-type: none; 
+padding: 0; 
+margin: 0; 
+margin-bottom: 20px;
+}
+.result-item { 
+background-color: #1e1e1e; padding: 15px; margin-bottom: 10px; 
+border-radius: 8px; display: flex; align-items: center; font-size: 18px;
+}
+.prefix { font-weight: bold; color: #00e676; margin-right: 15px; min-width: 50px; }
+.words { flex-grow: 1; word-break: keep-all; color: #fff; }
+.category {
+font-size: 13px; color: #aaa; background-color: #2a2a2a;
+padding: 4px 8px; border-radius: 6px; margin-left: 10px; border: 1px solid #444;
+white-space: nowrap;
+}
+.category.user-added {
+color: #00e676;
+border-color: #00e676;
+background-color: rgba(0, 230, 118, 0.1);
+font-weight: bold;
+}
+.empty-msg { text-align: center; color: #666; margin-top: 20px; }
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>자음의숲 검색기</h1>
-        <div class="subtitle">made by 갱생짐인</div>
+<div class="container">
+<h1>자음의숲 검색기</h1>
+<div class="subtitle">made by 갱생짐인</div>
 
-        <input type="text" id="searchInput" class="search-box" placeholder="검색어 입력" autocomplete="off">
-        
-        <ul id="resultList" class="result-list">
-            <div class="empty-msg">검색어를 입력하면 결과가 나타납니다.</div>
-        </ul>
+<input type="text" id="searchInput" class="search-box" placeholder="검색어 입력" autocomplete="off">
 
-        <div class="add-form" id="addForm">
-            <div class="section-title">새 단어 추가하기</div>
-            <input type="text" id="addNickname" placeholder="맢닉(선택)" autocomplete="off">
-            <input type="text" id="addPrefix" placeholder="초성 (예: ㄱㅅㅈㅇ)" autocomplete="off">
-            <input type="text" id="addWord" placeholder="단어 (예: 갱생짐인)" autocomplete="off">
-            
-            <select id="addCategory">
-                <option value="" disabled selected>범주 선택</option>
-                <option value="가전">가전</option>
-                <option value="고사성어">고사성어</option>
-                <option value="과일">과일</option>
-                <option value="과학">과학</option>
-                <option value="국가">국가</option>
-                <option value="날씨">날씨</option>
-                <option value="도시">도시</option>
-                <option value="동물">동물</option>
-                <option value="마피아42">마피아42</option>
-                <option value="명소">명소</option>
-                <option value="명작">명작</option>
-                <option value="색깔">색깔</option>
-                <option value="속담">속담</option>
-                <option value="수학">수학</option>
-                <option value="스포츠">스포츠</option>
-                <option value="식물">식물</option>
-                <option value="신체">신체</option>
-                <option value="신화">신화</option>
-                <option value="악기">악기</option>
-                <option value="양념">양념</option>
-                <option value="역사">역사</option>
-                <option value="영화">영화</option>
-                <option value="음악">음악</option>
-                <option value="음료">음료</option>
-                <option value="음식">음식</option>
-                <option value="의류">의류</option>
-                <option value="장소">장소</option>
-                <option value="전통문화">전통문화</option>
-                <option value="지역">지역</option>
-                <option value="직업">직업</option>
-                <option value="채소">채소</option>
-                <option value="천문현상">천문현상</option>
-                <option value="탈것">탈것</option>
-                <option value="학용품">학용품</option>
-                <option value="화폐단위">화폐단위</option>
-                <option value="기타">기타</option>
-            </select>
-            <button id="addBtn">등록</button>
-        </div>
-        
-    </div>
+<ul id="resultList" class="result-list">
+<div class="empty-msg">검색어를 입력하면 결과가 나타납니다.</div>
+</ul>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+<div class="add-form" id="addForm">
+<div class="section-title">새 단어 추가하기</div>
+<input type="text" id="addNickname" placeholder="맢닉(선택)" autocomplete="off">
+<input type="text" id="addPrefix" placeholder="초성 (예: ㄱㅅㅈㅇ)" autocomplete="off">
+<input type="text" id="addWord" placeholder="단어 (예: 갱생짐인)" autocomplete="off">
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDyskFIsk3_OeFTFOnMVlgzg2opZmAy8-c",
-            authDomain: "jaum-5f8b3.firebaseapp.com",
-            projectId: "jaum-5f8b3",
-            storageBucket: "jaum-5f8b3.firebasestorage.app",
-            messagingSenderId: "455475916718",
-            appId: "1:455475916718:web:96198afe076cfaee7d223f"
-        };
+<select id="addCategory">
+<option value="" disabled selected>범주 선택</option>
+<option value="가전">가전</option>
+<option value="고사성어">고사성어</option>
+<option value="과일">과일</option>
+<option value="과학">과학</option>
+<option value="국가">국가</option>
+<option value="날씨">날씨</option>
+<option value="도시">도시</option>
+<option value="동물">동물</option>
+<option value="마피아42">마피아42</option>
+<option value="명소">명소</option>
+<option value="명작">명작</option>
+<option value="색깔">색깔</option>
+<option value="속담">속담</option>
+<option value="수학">수학</option>
+<option value="스포츠">스포츠</option>
+<option value="식물">식물</option>
+<option value="신체">신체</option>
+<option value="신화">신화</option>
+<option value="악기">악기</option>
+<option value="양념">양념</option>
+<option value="역사">역사</option>
+<option value="영화">영화</option>
+<option value="음악">음악</option>
+<option value="음료">음료</option>
+<option value="음식">음식</option>
+<option value="의류">의류</option>
+<option value="장소">장소</option>
+<option value="전통문화">전통문화</option>
+<option value="지역">지역</option>
+<option value="직업">직업</option>
+<option value="채소">채소</option>
+<option value="천문현상">천문현상</option>
+<option value="탈것">탈것</option>
+<option value="학용품">학용품</option>
+<option value="화폐단위">화폐단위</option>
+<option value="기타">기타</option>
+</select>
+<button id="addBtn">등록</button>
+</div>
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+</div>
 
-        const rawData = `
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyDyskFIsk3_OeFTFOnMVlgzg2opZmAy8-c",
+authDomain: "jaum-5f8b3.firebaseapp.com",
+projectId: "jaum-5f8b3",
+storageBucket: "jaum-5f8b3.firebasestorage.app",
+messagingSenderId: "455475916718",
+appId: "1:455475916718:web:96198afe076cfaee7d223f"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const rawData = `
 [악기]
 ㅂ 북
 ㅈ 징
@@ -4174,7 +4166,7 @@
 
 
 
-        
+       
 
 
 [기타]
@@ -4209,151 +4201,132 @@
 ㅂㅅ 바순
 ㅇㅈㅇㅂㅅ 우주왕복선
 ㅃ 뺨
-        `; 
+       `; 
 
-        const dataMap = new Map();
+const dataMap = new Map();
 
-        function getPriority(category, isUser) {
-            if (isUser) return 1; 
-            if (category === "기타") return 2;      
-            return 3;                               
-        }
-
-        function addOrUpdateWord(prefix, word, category, isUser = false) {
-            const uniqueKey = prefix + "_" + word;
-            const newPriority = getPriority(category, isUser);
-
-            if (dataMap.has(uniqueKey)) {
-                const existingData = dataMap.get(uniqueKey);
-                const existingPriority = getPriority(existingData.category, existingData.isUser);
-                if (newPriority > existingPriority) {
-                    dataMap.set(uniqueKey, { prefix, words: word, category, isUser });
-                }
-            } else {
-                dataMap.set(uniqueKey, { prefix, words: word, category, isUser });
-            }
-        }
-
-        let currentCategory = "기타";
-        rawData.split('\n').forEach(line => {
-            let text = line.trim();
-            if (!text || text.includes('─')) return;
-            if (text.startsWith('[') && text.endsWith(']')) {
-                currentCategory = text.slice(1, -1);
-                return;
-            }
-            const firstSpaceIndex = text.indexOf(' ');
-            if (firstSpaceIndex !== -1) {
-                const prefix = text.substring(0, firstSpaceIndex).trim();
-                const word = text.substring(firstSpaceIndex + 1).trim();
-                addOrUpdateWord(prefix, word, currentCategory, false);
-            }
-        });
-
-        let dataList = Array.from(dataMap.values());
-
-        onSnapshot(collection(db, "words"), (snapshot) => {
-            snapshot.docChanges().forEach((change) => {
-                if (change.type === "added" || change.type === "modified") {
-                    const data = change.doc.data();
-                    if (!data.prefix || !data.word) return; 
-                    const displayTag = `${data.nickname || "익명"}-${data.category || "기타"}`;
-                    addOrUpdateWord(data.prefix, data.word, displayTag, true);
-                }
-            });
-            dataList = Array.from(dataMap.values());
-            const currentQuery = document.getElementById('searchInput').value;
-            if(currentQuery) renderResults(currentQuery);
-        });
-
-        document.getElementById('addBtn').addEventListener('click', async () => {
-            let nickname = document.getElementById('addNickname').value.trim();
-            const prefix = document.getElementById('addPrefix').value.trim();
-            const word = document.getElementById('addWord').value.trim();
-            const category = document.getElementById('addCategory').value;
-
-            if (!prefix || !word) { alert("초성과 단어를 모두 입력해주세요!"); return; }
-            if (!category) { alert("범주를 선택해주세요!"); return; }
-            if (!nickname) nickname = "익명";
-
-            try {
-                await addDoc(collection(db, "words"), {
-                    category: category, 
-                    prefix: prefix,
-                    word: word,
-                    nickname: nickname,
-                    timestamp: new Date()
-                });
-                alert(`'${word}' 단어가 성공적으로 등록되었습니다!`);
-                document.getElementById('addPrefix').value = '';
-                document.getElementById('addWord').value = '';
-                document.getElementById('addCategory').value = '';
-            } catch (e) {
-                alert("단어 추가에 실패했습니다.");
-            }
-        });
-
-        const searchInput = document.getElementById('searchInput');
-        const resultList = document.getElementById('resultList');
-
-        function renderResults(query) {
-    resultList.innerHTML = '';
-    const lowerQuery = query.toLowerCase().replace(/\s/g, ''); 
-
-    if (lowerQuery.length === 0) {
-        resultList.innerHTML = '<div class="empty-msg">검색어를 입력하면 결과가 나타납니다.</div>';
-        return;
-    }
-
-    const filtered = dataList.filter(item => {
-        const safePrefix = (item.prefix || "").toLowerCase().replace(/\s/g, '');
-        const safeWords = (item.words || "").toLowerCase().replace(/\s/g, '');
-        return safePrefix.startsWith(lowerQuery) || safeWords.startsWith(lowerQuery);
-    });
-
-    // 정렬 로직 그대로 유지
-    filtered.sort((a, b) => {
-        const lenA = (a.prefix || "").replace(/\s/g, '').length;
-        const lenB = (b.prefix || "").replace(/\s/g, '').length;
-        if (lenA !== lenB) return lenA - lenB;
-        if (a.isUser !== b.isUser) return a.isUser ? 1 : -1; 
-        return (a.prefix || "").localeCompare(b.prefix || "");
-    });
-
-    if (filtered.length === 0) {
-        resultList.innerHTML = '<div class="empty-msg">일치하는 단어가 없습니다.</div>';
-        return;
-    }
-
-    filtered.forEach(item => {
-        const li = document.createElement('li');
-        li.className = 'result-item';
-
-        // 🚀 하이라이트 로직 적용
-        const rawPrefix = item.prefix || "";
-        let displayPrefix = "";
-
-        // 검색어가 초성 앞부분과 일치하면 그 부분만 잘라서 강조!
-        if (rawPrefix.toLowerCase().replace(/\s/g, '').startsWith(lowerQuery)) {
-            const matchLen = query.replace(/\s/g, '').length; // 실제 일치하는 글자 수
-            const highlightPart = rawPrefix.substring(0, matchLen); // 강조할 앞부분
-            const normalPart = rawPrefix.substring(matchLen); // 나머지 뒷부분
-            displayPrefix = `<span class="highlight">${highlightPart}</span>${normalPart}`;
-        } else {
-            displayPrefix = rawPrefix;
-        }
-
-        const categoryClass = item.isUser ? 'category user-added' : 'category';
-        li.innerHTML = `
-            <span class="prefix">${displayPrefix}</span>
-            <span class="words">${item.words}</span>
-            <span class="${categoryClass}">${item.category}</span>
-        `;
-        resultList.appendChild(li);
-    });
+function getPriority(category, isUser) {
+if (isUser) return 1; 
+if (category === "기타") return 2;      
+return 3;                               
 }
 
-        searchInput.addEventListener('input', (e) => renderResults(e.target.value));
-    </script>
+function addOrUpdateWord(prefix, word, category, isUser = false) {
+const uniqueKey = prefix + "_" + word;
+const newPriority = getPriority(category, isUser);
+
+if (dataMap.has(uniqueKey)) {
+const existingData = dataMap.get(uniqueKey);
+const existingPriority = getPriority(existingData.category, existingData.isUser);
+if (newPriority > existingPriority) {
+dataMap.set(uniqueKey, { prefix, words: word, category, isUser });
+}
+} else {
+dataMap.set(uniqueKey, { prefix, words: word, category, isUser });
+}
+}
+
+let currentCategory = "기타";
+rawData.split('\n').forEach(line => {
+let text = line.trim();
+if (!text || text.includes('─')) return;
+if (text.startsWith('[') && text.endsWith(']')) {
+currentCategory = text.slice(1, -1);
+return;
+}
+const firstSpaceIndex = text.indexOf(' ');
+if (firstSpaceIndex !== -1) {
+const prefix = text.substring(0, firstSpaceIndex).trim();
+const word = text.substring(firstSpaceIndex + 1).trim();
+addOrUpdateWord(prefix, word, currentCategory, false);
+}
+});
+
+let dataList = Array.from(dataMap.values());
+
+onSnapshot(collection(db, "words"), (snapshot) => {
+snapshot.docChanges().forEach((change) => {
+if (change.type === "added" || change.type === "modified") {
+const data = change.doc.data();
+if (!data.prefix || !data.word) return; 
+const displayTag = `${data.nickname || "익명"}-${data.category || "기타"}`;
+addOrUpdateWord(data.prefix, data.word, displayTag, true);
+}
+});
+dataList = Array.from(dataMap.values());
+const currentQuery = document.getElementById('searchInput').value;
+if(currentQuery) renderResults(currentQuery);
+});
+
+document.getElementById('addBtn').addEventListener('click', async () => {
+let nickname = document.getElementById('addNickname').value.trim();
+const prefix = document.getElementById('addPrefix').value.trim();
+const word = document.getElementById('addWord').value.trim();
+const category = document.getElementById('addCategory').value;
+
+if (!prefix || !word) { alert("초성과 단어를 모두 입력해주세요!"); return; }
+if (!category) { alert("범주를 선택해주세요!"); return; }
+if (!nickname) nickname = "익명";
+
+try {
+await addDoc(collection(db, "words"), {
+category: category, 
+prefix: prefix,
+word: word,
+nickname: nickname,
+timestamp: new Date()
+});
+alert(`'${word}' 단어가 성공적으로 등록되었습니다!`);
+                document.getElementById('addNickname').value = '';
+document.getElementById('addPrefix').value = '';
+document.getElementById('addWord').value = '';
+document.getElementById('addCategory').value = '';
+} catch (e) {
+alert("단어 추가에 실패했습니다.");
+}
+});
+
+const searchInput = document.getElementById('searchInput');
+const resultList = document.getElementById('resultList');
+
+function renderResults(query) {
+resultList.innerHTML = '';
+const lowerQuery = query.toLowerCase().replace(/\s/g, ''); 
+
+if (lowerQuery.length === 0) {
+resultList.innerHTML = '<div class="empty-msg">검색어를 입력하면 결과가 나타납니다.</div>';
+return;
+}
+
+const filtered = dataList.filter(item => (item.prefix || "").includes(lowerQuery) || (item.words || "").includes(query));
+
+filtered.sort((a, b) => {
+const lenA = (a.prefix || "").replace(/\s/g, '').length;
+const lenB = (b.prefix || "").replace(/\s/g, '').length;
+if (lenA !== lenB) return lenA - lenB;
+if (a.isUser !== b.isUser) return a.isUser ? 1 : -1; 
+return (a.prefix || "").localeCompare(b.prefix || "");
+});
+
+if (filtered.length === 0) {
+resultList.innerHTML = '<div class="empty-msg">일치하는 단어가 없습니다.</div>';
+return;
+}
+
+filtered.forEach(item => {
+const li = document.createElement('li');
+li.className = 'result-item';
+const categoryClass = item.isUser ? 'category user-added' : 'category';
+li.innerHTML = `
+                   <span class="prefix">${item.prefix}</span>
+                   <span class="words">${item.words}</span>
+                   <span class="${categoryClass}">${item.category}</span>
+               `;
+resultList.appendChild(li);
+});
+}
+
+searchInput.addEventListener('input', (e) => renderResults(e.target.value));
+</script>
 </body>
 </html>
