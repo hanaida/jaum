@@ -4293,9 +4293,7 @@
                 // 유저가 추가한 단어(isUser)면 'user-added'라는 빨간색 옷을 입힘!
                 const categoryClass = item.isUser ? 'category user-added' : 'category';
                 
-                li.innerHTML = `
-                    <span class="${categoryClass}">[${item.category}]</span>
-                `;
+                
                 
                 // 💡 닉네임이 있는 경우(유저 추가)와 없는 경우(기존 단어)를 다르게 표시
                 let displayCategory = `[${item.category}]`;
