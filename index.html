@@ -27,15 +27,51 @@
             font-size: 14px;
             margin-bottom: 25px;
         }
-        .tips { 
-            background-color: #1e1e1e; 
-            padding: 15px; 
-            border-radius: 8px; 
-            margin-bottom: 20px; 
-            font-size: 14px; 
-            line-height: 1.6;
-            border-left: 4px solid #00e676;
+        /* 새 단어 추가 폼 디자인 */
+        .add-form {
+            background-color: #1e1e1e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            border: 1px solid #333;
         }
+        .section-title {
+            width: 100%;
+            font-size: 14px;
+            color: #00e676;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .add-form input {
+            flex: 1;
+            padding: 10px;
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 4px;
+            min-width: 120px;
+            outline: none;
+        }
+        .add-form input:focus {
+            border-color: #00e676;
+        }
+        .add-form button {
+            padding: 10px 20px;
+            background-color: #00e676;
+            color: #121212;
+            border: none;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .add-form button:hover {
+            background-color: #00c853;
+        }
+        /* 검색창 및 결과 리스트 디자인 */
         .search-box { 
             width: 100%; 
             padding: 15px; 
@@ -50,49 +86,19 @@
             outline: none; 
             transition: border-color 0.2s;
         }
-        .search-box:focus { 
-            border-color: #00e676; 
-        }
-        .result-list { 
-            list-style-type: none; 
-            padding: 0; 
-            margin: 0; 
-        }
+        .search-box:focus { border-color: #00e676; }
+        .result-list { list-style-type: none; padding: 0; margin: 0; }
         .result-item { 
-            background-color: #1e1e1e; 
-            padding: 15px; 
-            margin-bottom: 10px; 
-            border-radius: 8px; 
-            display: flex; 
-            align-items: center; 
-            font-size: 18px;
+            background-color: #1e1e1e; padding: 15px; margin-bottom: 10px; 
+            border-radius: 8px; display: flex; align-items: center; font-size: 18px;
         }
-        .prefix { 
-            font-weight: bold; 
-            color: #00e676; 
-            margin-right: 15px; 
-            min-width: 50px;
-        }
-        .words { 
-            flex-grow: 1; 
-            word-break: keep-all; 
-            color: #fff;
-        }
+        .prefix { font-weight: bold; color: #00e676; margin-right: 15px; min-width: 50px; }
+        .words { flex-grow: 1; word-break: keep-all; color: #fff; }
         .category {
-            font-size: 13px;
-            color: #aaa;
-            background-color: #2a2a2a;
-            padding: 4px 8px;
-            border-radius: 6px;
-            margin-left: 10px;
-            white-space: nowrap;
-            border: 1px solid #444;
+            font-size: 13px; color: #aaa; background-color: #2a2a2a;
+            padding: 4px 8px; border-radius: 6px; margin-left: 10px; border: 1px solid #444;
         }
-        .empty-msg {
-            text-align: center;
-            color: #666;
-            margin-top: 20px;
-        }
+        .empty-msg { text-align: center; color: #666; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -100,21 +106,38 @@
         <h1>자음의숲 검색기</h1>
         <div class="subtitle">made by 갱생짐인</div>
         
-        <div class="tips">
-            <strong>사용법</strong><br>
-            - 초성으로 검색<br>
-            - 오류 및 단어 추가는 접선<br>
+        <div class="add-form" id="addForm">
+            <div class="section-title">새 단어 추가하기</div>
+            <input type="text" id="addPrefix" placeholder="초성 (예: ㄴㅅㅈㅇ)" autocomplete="off">
+            <input type="text" id="addWord" placeholder="단어 (예: 갱생짐인)" autocomplete="off">
+            <button id="addBtn">등록</button>
         </div>
 
-        <input type="text" id="searchInput" class="search-box" placeholder="검색어 입력" autocomplete="off" autofocus>
+        <input type="text" id="searchInput" class="search-box" placeholder="검색어 입력" autocomplete="off">
         
         <ul id="resultList" class="result-list">
             <div class="empty-msg">검색어를 입력하면 결과가 나타납니다.</div>
         </ul>
     </div>
 
-    <script>
-        // 👇 여기에 데이터를 붙여넣으세요! (예: [수학] \n ㅈㅇㅁㅊ 정육면체)
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        // 🚨 1. 여기에 네 프로젝트의 firebaseConfig를 덮어쓰세요!
+        const firebaseConfig = {
+    apiKey: "AIzaSyDyskFIsk3_OeFTFOnMVlgzg2opZmAy8-c",
+    authDomain: "jaum-5f8b3.firebaseapp.com",
+    projectId: "jaum-5f8b3",
+    storageBucket: "jaum-5f8b3.firebasestorage.app",
+    messagingSenderId: "455475916718",
+    appId: "1:455475916718:web:96198afe076cfaee7d223f"
+  };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 2. 여기에 기존 단어장을 붙여넣으세요!
         const rawData = `
 [악기]
 ㅂ 북
@@ -4081,7 +4104,7 @@
         
 
 
-[기타]
+[기
 ㄴㅇㄱㅂㄷ 노인과바다
 ㅎㅇㄹㅂㅇㄲ 한여름밤의꿈
 ㅊㅇㅇㅇㅎㄱㄷㄱㅈㅅㅋ 추억의영화감독기자스킨
@@ -4115,67 +4138,110 @@
 ㅃ 뺨
         `;
 
-        // 중복 및 카테고리 우선순위 처리를 위한 Map
         const dataMap = new Map();
-        let currentCategory = "기타"; // 기본 카테고리
 
-        // 원본 데이터를 자동으로 분석해서 Map에 저장
+        // 💡 우선순위 판별 함수 (숫자가 클수록 우선순위 높음)
+        function getPriority(category) {
+            if (category === "유저 추가") return 1; // 최하위
+            if (category === "기타") return 2;      // 중간
+            return 3;                               // 최상위 (과학, 수학 등 나머지 모든 범주)
+        }
+
+        // 💡 단어 추가/수정 공통 로직 (우선순위를 비교해서 더 높은 범주만 저장)
+        function addOrUpdateWord(prefix, word, category) {
+            const uniqueKey = prefix + "_" + word;
+            const newPriority = getPriority(category);
+
+            if (dataMap.has(uniqueKey)) {
+                const existingData = dataMap.get(uniqueKey);
+                const existingPriority = getPriority(existingData.category);
+
+                // 새로 들어온 범주의 우선순위가 더 높을 때만 덮어쓰기
+                if (newPriority > existingPriority) {
+                    dataMap.set(uniqueKey, { prefix, words: word, category });
+                }
+            } else {
+                // 처음 등록되는 단어면 그냥 저장
+                dataMap.set(uniqueKey, { prefix, words: word, category });
+            }
+        }
+
+        // 3. 기존 단어장(rawData) 기본 세팅
+        let currentCategory = "기타";
         rawData.split('\n').forEach(line => {
             let text = line.trim();
-            if (!text) return; // 빈 줄 무시
-            
-            // 1. ──────────────── 같은 구분선 무시
+            if (!text) return;
             if (text.includes('─')) return;
-
-            // 2. 카테고리 추출 (예: [수학])
+            
             if (text.startsWith('[') && text.endsWith(']')) {
                 currentCategory = text.slice(1, -1);
                 return;
             }
-
-            // 3. 단어와 초성 추출 (초성 띄어쓰기 단어 형태)
+            
             const firstSpaceIndex = text.indexOf(' ');
             if (firstSpaceIndex !== -1) {
                 const prefix = text.substring(0, firstSpaceIndex).trim();
                 const word = text.substring(firstSpaceIndex + 1).trim();
-
-                const uniqueKey = prefix + "_" + word;
-
-                // 이미 등록된 단어인지 확인
-                if (dataMap.has(uniqueKey)) {
-                    const existingData = dataMap.get(uniqueKey);
-                    
-                    // 기존에 등록된 범주가 '기타'이고, 현재 넣으려는 범주가 '기타'가 아니면 덮어쓰기!
-                    if (existingData.category === "기타" && currentCategory !== "기타") {
-                        dataMap.set(uniqueKey, {
-                            prefix: prefix,
-                            words: word,
-                            category: currentCategory
-                        });
-                    }
-                    // 그 외의 경우 (이미 구체적인 범주에 있거나 둘 다 '기타'인 경우)는 무시
-                } else {
-                    // 처음 등장하는 단어는 그대로 저장
-                    dataMap.set(uniqueKey, {
-                        prefix: prefix,
-                        words: word,
-                        category: currentCategory
-                    });
-                }
+                
+                // 공통 함수로 전달
+                addOrUpdateWord(prefix, word, currentCategory);
             }
         });
 
-        // Map에 저장된 데이터를 검색용 배열로 변환
-        const dataList = Array.from(dataMap.values());
+        let dataList = Array.from(dataMap.values());
 
+        // 🚀 4. 파이어베이스 데이터 실시간 연동
+        onSnapshot(collection(db, "words"), (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+                if (change.type === "added" || change.type === "modified") {
+                    const data = change.doc.data();
+                    
+                    // 클라우드에서 온 데이터는 항상 '유저 추가'로 처리 (우선순위 1)
+                    addOrUpdateWord(data.prefix, data.word, "유저 추가");
+                }
+            });
+            
+            dataList = Array.from(dataMap.values());
+            
+            const currentQuery = document.getElementById('searchInput').value;
+            if(currentQuery) renderResults(currentQuery);
+        });
+
+        // ✍️ 5. 새 단어 등록 버튼 기능
+        document.getElementById('addBtn').addEventListener('click', async () => {
+            const prefix = document.getElementById('addPrefix').value.trim();
+            const word = document.getElementById('addWord').value.trim();
+
+            if (!prefix || !word) {
+                alert("초성과 단어를 모두 입력해주세요!");
+                return;
+            }
+
+            try {
+                // 입력칸에서 범주를 아예 지웠으므로 클라우드에는 무조건 '유저 추가'로 저장됨
+                await addDoc(collection(db, "words"), {
+                    category: "유저 추가", 
+                    prefix: prefix,
+                    word: word,
+                    timestamp: new Date()
+                });
+                
+                alert(`'${word}' 단어가 성공적으로 등록되었습니다!`);
+                document.getElementById('addPrefix').value = '';
+                document.getElementById('addWord').value = '';
+                
+            } catch (e) {
+                console.error("추가 실패:", e);
+                alert("단어 추가에 실패했습니다.");
+            }
+        });
+
+        // 🔍 검색 및 렌더링 함수
         const searchInput = document.getElementById('searchInput');
         const resultList = document.getElementById('resultList');
 
-        // 검색 함수
         function renderResults(query) {
             resultList.innerHTML = '';
-            
-            // 공백 무시
             const lowerQuery = query.toLowerCase().replace(/\s/g, ''); 
 
             if (lowerQuery.length === 0) {
@@ -4183,19 +4249,14 @@
                 return;
             }
 
-            // 필터링 조건
             const filtered = dataList.filter(item => {
                 return item.prefix.includes(lowerQuery) || item.words.includes(query);
             });
 
-            // 정렬 (초성 길이가 짧은 순, 같으면 가나다순)
             filtered.sort((a, b) => {
                 const lenA = a.prefix.replace(/\s/g, '').length;
                 const lenB = b.prefix.replace(/\s/g, '').length;
-                
-                if (lenA === lenB) {
-                    return a.prefix.localeCompare(b.prefix); 
-                }
+                if (lenA === lenB) return a.prefix.localeCompare(b.prefix); 
                 return lenA - lenB; 
             });
 
@@ -4204,20 +4265,18 @@
                 return;
             }
 
-            // 결과 화면에 그리기
             filtered.forEach(item => {
                 const li = document.createElement('li');
                 li.className = 'result-item';
                 li.innerHTML = `
                     <span class="prefix">${item.prefix}</span>
                     <span class="words">${item.words}</span>
-                    <span class="category">${item.category}</span>
+                    <span class="category">[${item.category}]</span>
                 `;
                 resultList.appendChild(li);
             });
         }
 
-        // 입력할 때마다 실시간으로 반응
         searchInput.addEventListener('input', (e) => {
             renderResults(e.target.value);
         });
