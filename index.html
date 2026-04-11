@@ -104,6 +104,12 @@
             padding: 4px 8px; border-radius: 6px; margin-left: 10px; border: 1px solid #444;
             white-space: nowrap;
         }
+        .category.user-added {
+            color: #ff5252;
+            border-color: #ff5252;
+            background-color: rgba(255, 82, 82, 0.1);
+            font-weight: bold;
+        }
         .empty-msg { text-align: center; color: #666; margin-top: 20px; }
     </style>
 </head>
@@ -4197,7 +4203,7 @@
                 if (change.type === "added" || change.type === "modified") {
                     const data = change.doc.data();
                     // 💡 파이어베이스에서 닉네임 데이터도 가져옴
-                    addOrUpdateWord(data.prefix, data.word, "유저 추가", data.nickname);
+                    addOrUpdateWord(data.prefix, data.word, data.nickname || "익명", true);
                 }
             });
             
@@ -4258,11 +4264,21 @@
                 return item.prefix.includes(lowerQuery) || item.words.includes(query);
             });
 
+            // 🚀 핵심 정렬 로직 (순서대로 심사함)
             filtered.sort((a, b) => {
                 const lenA = a.prefix.replace(/\s/g, '').length;
                 const lenB = b.prefix.replace(/\s/g, '').length;
-                if (lenA === lenB) return a.prefix.localeCompare(b.prefix); 
-                return lenA - lenB; 
+            
+                // [1순위 심사] 글자 수가 다르면? 짧은 게 무조건 위로! (예: 2글자 -> 3글자)
+                if (lenA !== lenB) return lenA - lenB;
+            
+                // [2순위 심사] 글자 수가 같다면? 유저가 추가한 단어(isUser)를 뒤로 보냄!
+                if (a.isUser !== b.isUser) {
+                    return a.isUser ? 1 : -1; // a가 닉네임 단어면 뒤로(+1) 밀어버림
+                }
+            
+                // [3순위 심사] 둘 다 일반 단어거나, 둘 다 닉네임 단어면? 가나다순으로!
+                return a.prefix.localeCompare(b.prefix);
             });
 
             if (filtered.length === 0) {
@@ -4273,6 +4289,13 @@
             filtered.forEach(item => {
                 const li = document.createElement('li');
                 li.className = 'result-item';
+
+                // 유저가 추가한 단어(isUser)면 'user-added'라는 빨간색 옷을 입힘!
+                const categoryClass = item.isUser ? 'category user-added' : 'category';
+                
+                li.innerHTML = `
+                    <span class="${categoryClass}">[${item.category}]</span>
+                `;
                 
                 // 💡 닉네임이 있는 경우(유저 추가)와 없는 경우(기존 단어)를 다르게 표시
                 let displayCategory = `[${item.category}]`;
