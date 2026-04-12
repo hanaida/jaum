@@ -4311,7 +4311,7 @@ function openUserModal(nickname) {
     const modalTitle = document.getElementById('modalTitle');
     const modalList = document.getElementById('modalList');
     
-    modalTitle.innerText = `🏆 '${nickname}'님이 추가한 단어`;
+    modalTitle.innerText = `${nickname}님이 추가한 단어`;
     modalList.innerHTML = ''; // 기존 내용 초기화
 
     // dataList에서 해당 유저의 닉네임과 일치하는 단어들만 필터링
