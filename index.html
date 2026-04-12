@@ -282,13 +282,13 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // 🚀 쌍자음(ㄲㄸㅃㅆㅉ)은 제외하고, 겹자음만 분리된 자음으로 매핑
+// 🚀 쌍자음(ㄲㄸㅃㅆㅉ)은 그대로 두고, 겹자음만 분리
 const complexConsonantMap = {
     'ㄳ': 'ㄱㅅ', 'ㄵ': 'ㄴㅈ', 'ㄶ': 'ㄴㅎ', 
     'ㄺ': 'ㄹㄱ', 'ㄻ': 'ㄹㅁ', 'ㄼ': 'ㄹㅂ', 'ㄽ': 'ㄹㅅ', 'ㄾ': 'ㄹㅌ', 'ㄿ': 'ㄹㅍ', 'ㅀ': 'ㄹㅎ', 
     'ㅄ': 'ㅂㅅ'
 };
 
-// 입력된 텍스트에서 겹자음을 찾아 분리해 주는 함수
 function normalizeConsonants(text) {
     if (!text) return text;
     let result = text;
@@ -4653,19 +4653,20 @@ onSnapshot(collection(db, "words"), (snapshot) => {
 document.getElementById('addBtn').addEventListener('click', async () => {
     let nickname = document.getElementById('addNickname').value.trim(); 
     
-    // 🚀 한글(자음/모음/완성형), 영문, 숫자를 제외한 모든 문자(공백, 특수문자 등)를 제거하는 정규식
+    // 🚀 특수문자 및 공백 제거 정규식 (한글, 영어, 숫자만 허용)
     const cleanRegex = /[^ㄱ-ㅎㅏ-ㅣ가-힣a-zA-Z0-9]/g;
 
-    // 초성: 특수문자/공백 제거 후 겹자음 분리 적용
+    // 1. 초성 입력값 세탁 (특수문자 제거 -> 겹자음 분리)
     const rawPrefix = document.getElementById('addPrefix').value.replace(cleanRegex, '');
     const prefix = normalizeConsonants(rawPrefix);
     
-    // 단어: 특수문자/공백 제거
+    // 2. 단어 입력값 세탁 (특수문자 제거)
     const word = document.getElementById('addWord').value.replace(cleanRegex, '');
     const category = document.getElementById('addCategory').value;
 
+    // 필수 입력 체크
     if (!prefix || !word) { 
-        alert("초성과 단어를 올바르게 입력해주세요! (특수문자 제외)"); 
+        alert("초성과 단어를 올바르게 입력해주세요!"); 
         return; 
     }
     if (!category) { alert("범주를 선택해주세요!"); return; }
@@ -4674,16 +4675,19 @@ document.getElementById('addBtn').addEventListener('click', async () => {
     try {
         await addDoc(collection(db, "words"), {
             category: category, 
-            prefix: prefix,
+            prefix: prefix, // 분리된 자음(ㄴㅈ 등)으로 저장됨
             word: word,
             nickname: nickname,
             timestamp: new Date()
         });
         alert(`'${word}' 단어가 성공적으로 등록되었습니다!`);
+        
+        // 입력창 초기화
         document.getElementById('addPrefix').value = '';     
         document.getElementById('addWord').value = '';       
         document.getElementById('addCategory').value = '';
     } catch (e) {
+        console.error("Error adding document: ", e);
         alert("단어 추가에 실패했습니다.");
     }
 });
