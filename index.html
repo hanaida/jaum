@@ -122,7 +122,7 @@ font-weight: bold;
 }
 .empty-msg { text-align: center; color: #666; margin-top: 20px; }
 
-/* 🚀 랭킹 컨테이너 디자인 추가 */
+/* 랭킹 컨테이너 디자인 */
 .ranking-container {
 background-color: #1e1e1e;
 padding: 15px;
@@ -149,6 +149,12 @@ padding: 8px 10px;
 border-bottom: 1px solid #333;
 color: #e0e0e0;
 font-size: 15px;
+cursor: pointer; /* 🚀 클릭 가능한 요소임을 나타내는 마우스 커서 */
+transition: background-color 0.2s;
+}
+.ranking-item:hover {
+background-color: #2a2a2a; /* 🚀 마우스 올렸을 때 살짝 밝아짐 */
+border-radius: 4px;
 }
 .ranking-item:last-child {
 border-bottom: none;
@@ -166,6 +172,40 @@ flex-grow: 1;
 color: #00e676;
 font-weight: bold;
 }
+
+/* 🚀 팝업(모달) 스타일 추가 */
+.modal-overlay {
+display: none; 
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background-color: rgba(0, 0, 0, 0.7); 
+z-index: 1000; 
+justify-content: center; align-items: center;
+}
+.modal-content {
+background-color: #1e1e1e; 
+padding: 20px; border-radius: 12px; border: 1px solid #444;
+width: 90%; max-width: 400px; max-height: 70vh; 
+display: flex; flex-direction: column;
+}
+.modal-header {
+display: flex; justify-content: space-between; align-items: center;
+border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px;
+}
+.modal-title { font-size: 16px; font-weight: bold; color: #00e676; }
+.close-btn { 
+background: none; border: none; color: #888; font-size: 24px; cursor: pointer; 
+}
+.close-btn:hover { color: #fff; }
+.modal-body {
+overflow-y: auto; /* 내용이 길면 스크롤 */
+padding-right: 5px;
+}
+.modal-list { list-style: none; padding: 0; margin: 0; }
+.modal-item {
+display: flex; justify-content: space-between; align-items: center;
+padding: 10px 0; border-bottom: 1px solid #2a2a2a;
+}
+.modal-item:last-child { border-bottom: none; }
 </style>
 </head>
 <body>
@@ -206,10 +246,23 @@ font-weight: bold;
 <div class="ranking-container" id="rankingContainer">
     <div class="ranking-title">단어 추가 랭킹</div>
     <ul class="ranking-list" id="rankingList">
-        <li class="ranking-item" style="justify-content:center; color:#666;">데이터를 불러오는 중...</li>
+        <li class="ranking-item" style="justify-content:center; color:#666; cursor:default;">데이터를 불러오는 중...</li>
     </ul>
 </div>
 
+</div>
+
+<div class="modal-overlay" id="userModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title" id="modalTitle">유저 단어 목록</div>
+            <button class="close-btn" id="closeModalBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <ul class="modal-list" id="modalList">
+                </ul>
+        </div>
+    </div>
 </div>
 
 <script type="module">
@@ -4228,7 +4281,6 @@ const rawData = `
        `; 
 
 const dataMap = new Map();
-// 🚀 유저별 추가 횟수를 추적할 객체 생성
 const userCounts = new Map(); 
 
 function getPriority(category, isUser, nickname) {
@@ -4254,18 +4306,53 @@ function addOrUpdateWord(prefix, word, category, isUser = false, nickname = "") 
     }
 }
 
-// 🚀 랭킹을 화면에 그려주는 함수 추가
+// 🚀 모달 열기 함수
+function openUserModal(nickname) {
+    const modalTitle = document.getElementById('modalTitle');
+    const modalList = document.getElementById('modalList');
+    
+    modalTitle.innerText = `🏆 '${nickname}'님이 추가한 단어`;
+    modalList.innerHTML = ''; // 기존 내용 초기화
+
+    // dataList에서 해당 유저의 닉네임과 일치하는 단어들만 필터링
+    const userWords = dataList.filter(item => item.isUser && item.nickname === nickname);
+
+    userWords.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'modal-item';
+        li.innerHTML = `
+            <div>
+                <span class="prefix" style="min-width:auto; margin-right:8px;">${item.prefix}</span>
+                <span class="words" style="font-size:16px;">${item.words}</span>
+            </div>
+            <span class="category user-added">${item.category}</span>
+        `;
+        modalList.appendChild(li);
+    });
+
+    document.getElementById('userModal').style.display = 'flex';
+}
+
+// 모달 닫기 이벤트 (X 버튼 또는 바깥 배경 클릭 시)
+document.getElementById('closeModalBtn').addEventListener('click', () => {
+    document.getElementById('userModal').style.display = 'none';
+});
+document.getElementById('userModal').addEventListener('click', (e) => {
+    if(e.target === document.getElementById('userModal')) {
+        document.getElementById('userModal').style.display = 'none';
+    }
+});
+
 function updateRankingUI() {
     const rankingList = document.getElementById('rankingList');
     rankingList.innerHTML = '';
 
-    // Map 데이터를 배열로 변환 후 추가 횟수(value) 기준으로 내림차순 정렬, 상위 5개만 자르기
     const sortedUsers = Array.from(userCounts.entries())
                              .sort((a, b) => b[1] - a[1])
                              .slice(0, 5);
 
     if (sortedUsers.length === 0) {
-        rankingList.innerHTML = '<li class="ranking-item" style="justify-content:center; color:#666;">아직 등록된 랭킹이 없습니다.</li>';
+        rankingList.innerHTML = '<li class="ranking-item" style="justify-content:center; color:#666; cursor:default;">아직 등록된 랭킹이 없습니다.</li>';
         return;
     }
 
@@ -4283,6 +4370,10 @@ function updateRankingUI() {
             </div>
             <span class="ranking-count">${count}개</span>
         `;
+        
+        // 🚀 클릭하면 모달 띄우기 이벤트 추가
+        li.addEventListener('click', () => openUserModal(nickname));
+        
         rankingList.appendChild(li);
     });
 }
@@ -4312,10 +4403,8 @@ onSnapshot(collection(db, "words"), (snapshot) => {
             if (!data.prefix || !data.word) return; 
             const displayTag = `${data.category || "기타"}`;
             
-            // 데이터 등록
             addOrUpdateWord(data.prefix, data.word, displayTag, true, data.nickname);
 
-            // 🚀 랭킹 집계 로직: 새로 추가된 데이터이면서 익명이 아닐 때만 카운트!
             if (change.type === "added" && data.nickname && data.nickname !== "익명") {
                 const currentCount = userCounts.get(data.nickname) || 0;
                 userCounts.set(data.nickname, currentCount + 1);
@@ -4324,8 +4413,6 @@ onSnapshot(collection(db, "words"), (snapshot) => {
     });
 
     dataList = Array.from(dataMap.values());
-    
-    // 🚀 데이터가 다 들어왔으니 랭킹 UI 업데이트
     updateRankingUI();
 
     const currentQuery = document.getElementById('searchInput').value;
@@ -4337,7 +4424,6 @@ document.getElementById('addBtn').addEventListener('click', async () => {
     
     const prefix = document.getElementById('addPrefix').value.replace(/\s/g, '');
     const word = document.getElementById('addWord').value.replace(/\s/g, '');
-    
     const category = document.getElementById('addCategory').value;
 
     if (!prefix || !word) { alert("초성과 단어를 모두 입력해주세요!"); return; }
