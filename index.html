@@ -4528,6 +4528,7 @@ document.getElementById('userModal').addEventListener('click', (e) => {
     }
 });
 
+// 2️⃣ 랭킹 UI 업데이트 함수 (점선 제거, 일반 랭킹과 동일한 스타일)
 function updateRankingUI() {
     const rankingList = document.getElementById('rankingList');
     rankingList.innerHTML = '';
@@ -4561,20 +4562,16 @@ function updateRankingUI() {
         rankingList.appendChild(li);
     });
 
-    // 익명 기여자 횟수 출력 (이모티콘 없이 깔끔하게 표시)
+    // 익명 기여자 횟수 출력 (다른 랭킹과 동일한 스타일)
     if (anonymousCount > 0) {
         const li = document.createElement('li');
         li.className = 'ranking-item';
-        li.style.borderTop = "1px dashed #444"; 
-        li.style.marginTop = "5px";
-        li.style.paddingTop = "12px";
         
         li.innerHTML = `
             <div>
-                <span class="ranking-rank"></span>
-                <span class="ranking-name" style="color: #aaa;">익명</span>
+                <span class="ranking-rank" style="width: auto;">익명</span>
             </div>
-            <span class="ranking-count" style="color: #aaa;">${anonymousCount}개</span>
+            <span class="ranking-count">${anonymousCount}개</span>
         `;
         
         li.addEventListener('click', () => openUserModal("익명"));
