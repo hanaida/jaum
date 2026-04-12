@@ -4470,7 +4470,7 @@ function getPriority(category, isUser, nickname) {
     return 3;                  
 }
 
-function addOrUpdateWord(prefix, word, category, isUser = false, nickname = "") {
+function addOrUpdateWord(prefix, word, category, isUser = false, nickname = "", timestamp = 0) {
     const uniqueKey = prefix + "_" + word;
     const newPriority = getPriority(category, isUser, nickname);
 
@@ -4479,28 +4479,25 @@ function addOrUpdateWord(prefix, word, category, isUser = false, nickname = "") 
         const existingPriority = getPriority(existingData.category, existingData.isUser, existingData.nickname);
         
         if (newPriority >= existingPriority) {
-            dataMap.set(uniqueKey, { prefix, words: word, category, isUser, nickname });
+            dataMap.set(uniqueKey, { prefix, words: word, category, isUser, nickname, timestamp });
         }
     } else {
-        dataMap.set(uniqueKey, { prefix, words: word, category, isUser, nickname });
+        dataMap.set(uniqueKey, { prefix, words: word, category, isUser, nickname, timestamp });
     }
 }
-
 // 🚀 모달 열기 함수
 function openUserModal(nickname) {
     const modalTitle = document.getElementById('modalTitle');
     const modalList = document.getElementById('modalList');
+    modalTitle.innerText = `${nickname}님이 추가한 단어`;
     
-    // 익명일 경우 타이틀 변경
-    if(nickname === "익명") {
-        modalTitle.innerText = `익명`;
-    } else {
-        modalTitle.innerText = `${nickname}님이 추가한 단어`;
-    }
     
     modalList.innerHTML = ''; 
 
-    const userWords = dataList.filter(item => item.isUser && item.nickname === nickname);
+    let userWords = dataList.filter(item => item.isUser && item.nickname === nickname);
+
+    // 🚀 추가된 부분: 리스트를 띄우기 전에 최신순(시간값이 큰 순서)으로 정렬!
+    userWords.sort((a, b) => b.timestamp - a.timestamp);
 
     userWords.forEach(item => {
         const li = document.createElement('li');
@@ -4599,37 +4596,38 @@ let dataList = Array.from(dataMap.values());
 
 onSnapshot(collection(db, "words"), (snapshot) => {
     snapshot.docChanges().forEach((change) => {
-        // 데이터가 새로 추가되거나 수정되었을 때
         if (change.type === "added" || change.type === "modified") {
             const data = change.doc.data();
-            
-            // 초성이나 단어가 비어있으면 무시
             if (!data.prefix || !data.word) return; 
-            
             const displayTag = `${data.category || "기타"}`;
             
-            // 로컬 데이터 맵에 단어 추가 또는 업데이트
-            addOrUpdateWord(data.prefix, data.word, displayTag, true, data.nickname);
+            // 🚀 파이어베이스의 시간 데이터를 숫자로 변환 (없으면 현재 시간)
+            let ts = 0;
+            if (data.timestamp && data.timestamp.toMillis) {
+                ts = data.timestamp.toMillis();
+            } else if (data.timestamp && data.timestamp.seconds) {
+                ts = data.timestamp.seconds * 1000;
+            } else {
+                ts = Date.now();
+            }
+            
+            // timestamp(ts) 변수를 맨 끝에 추가로 넘겨줌
+            addOrUpdateWord(data.prefix, data.word, displayTag, true, data.nickname, ts);
 
-            // 🚀 새로 추가된 데이터일 때만 랭킹 카운트 계산
             if (change.type === "added" && data.nickname) {
                 if (data.nickname === "익명") {
-                    anonymousCount++; // 익명 유저 횟수 증가
+                    anonymousCount++;
                 } else {
                     const currentCount = userCounts.get(data.nickname) || 0;
-                    userCounts.set(data.nickname, currentCount + 1); // 특정 닉네임 횟수 증가
+                    userCounts.set(data.nickname, currentCount + 1);
                 }
             }
         }
     });
 
-    // 맵 데이터를 배열로 변환해서 검색용 리스트 업데이트
     dataList = Array.from(dataMap.values());
-    
-    // UI에 바뀐 랭킹 바로 반영
     updateRankingUI();
 
-    // 사용자가 현재 검색 중이라면 검색 결과 화면도 즉시 갱신
     const currentQuery = document.getElementById('searchInput').value;
     if(currentQuery) renderResults(currentQuery);
 });
