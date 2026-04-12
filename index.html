@@ -4262,30 +4262,33 @@ onSnapshot(collection(db, "words"), (snapshot) => {
     if(currentQuery) renderResults(currentQuery);
 });
 document.getElementById('addBtn').addEventListener('click', async () => {
-let nickname = document.getElementById('addNickname').value.trim();
-const prefix = document.getElementById('addPrefix').value.trim();
-const word = document.getElementById('addWord').value.trim();
-const category = document.getElementById('addCategory').value;
+    let nickname = document.getElementById('addNickname').value.trim(); // 닉네임은 양끝 공백만 제거
+    
+    // 🚀 수정된 부분: .trim() 대신 .replace(/\s/g, '')를 써서 모든 공백 제거!
+    const prefix = document.getElementById('addPrefix').value.replace(/\s/g, '');
+    const word = document.getElementById('addWord').value.replace(/\s/g, '');
+    
+    const category = document.getElementById('addCategory').value;
 
-if (!prefix || !word) { alert("초성과 단어를 모두 입력해주세요!"); return; }
-if (!category) { alert("범주를 선택해주세요!"); return; }
-if (!nickname) nickname = "익명";
+    if (!prefix || !word) { alert("초성과 단어를 모두 입력해주세요!"); return; }
+    if (!category) { alert("범주를 선택해주세요!"); return; }
+    if (!nickname) nickname = "익명";
 
-try {
-await addDoc(collection(db, "words"), {
-category: category, 
-prefix: prefix,
-word: word,
-nickname: nickname,
-timestamp: new Date()
-});
-alert(`'${word}' 단어가 성공적으로 등록되었습니다!`);
-document.getElementById('addPrefix').value = '';     // 초성은 비우기
-document.getElementById('addWord').value = '';       // 단어는 비우기
-document.getElementById('addCategory').value = '';
-} catch (e) {
-alert("단어 추가에 실패했습니다.");
-}
+    try {
+        await addDoc(collection(db, "words"), {
+            category: category, 
+            prefix: prefix,
+            word: word,
+            nickname: nickname,
+            timestamp: new Date()
+        });
+        alert(`'${word}' 단어가 성공적으로 등록되었습니다!`);
+        document.getElementById('addPrefix').value = '';     
+        document.getElementById('addWord').value = '';       
+        document.getElementById('addCategory').value = '';
+    } catch (e) {
+        alert("단어 추가에 실패했습니다.");
+    }
 });
 
 const searchInput = document.getElementById('searchInput');
