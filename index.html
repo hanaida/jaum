@@ -281,6 +281,24 @@ appId: "1:455475916718:web:96198afe076cfaee7d223f"
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// 🚀 쌍자음(ㄲㄸㅃㅆㅉ)은 제외하고, 겹자음만 분리된 자음으로 매핑
+const complexConsonantMap = {
+    'ㄳ': 'ㄱㅅ', 'ㄵ': 'ㄴㅈ', 'ㄶ': 'ㄴㅎ', 
+    'ㄺ': 'ㄹㄱ', 'ㄻ': 'ㄹㅁ', 'ㄼ': 'ㄹㅂ', 'ㄽ': 'ㄹㅅ', 'ㄾ': 'ㄹㅌ', 'ㄿ': 'ㄹㅍ', 'ㅀ': 'ㄹㅎ', 
+    'ㅄ': 'ㅂㅅ'
+};
+
+// 입력된 텍스트에서 겹자음을 찾아 분리해 주는 함수
+function normalizeConsonants(text) {
+    if (!text) return text;
+    let result = text;
+    for (const [complex, single] of Object.entries(complexConsonantMap)) {
+        const regex = new RegExp(complex, 'g');
+        result = result.replace(regex, single);
+    }
+    return result;
+}
+    
 const rawData = `
 [악기]
 ㅂ 북
@@ -4635,7 +4653,10 @@ onSnapshot(collection(db, "words"), (snapshot) => {
 document.getElementById('addBtn').addEventListener('click', async () => {
     let nickname = document.getElementById('addNickname').value.trim(); 
     
-    const prefix = document.getElementById('addPrefix').value.replace(/\s/g, '');
+    // 🚀 등록할 때도 초성의 겹자음을 분리해서 저장
+    const rawPrefix = document.getElementById('addPrefix').value.replace(/\s/g, '');
+    const prefix = normalizeConsonants(rawPrefix);
+    
     const word = document.getElementById('addWord').value.replace(/\s/g, '');
     const category = document.getElementById('addCategory').value;
 
@@ -4664,40 +4685,47 @@ const searchInput = document.getElementById('searchInput');
 const resultList = document.getElementById('resultList');
 
 function renderResults(query) {
-resultList.innerHTML = '';
-const lowerQuery = query.toLowerCase().replace(/\s/g, ''); 
+    resultList.innerHTML = '';
+    
+    // 🚀 공백을 제거한 검색어에 겹자음 분리 함수 적용
+    const rawQuery = query.toLowerCase().replace(/\s/g, '');
+    const normalizedQuery = normalizeConsonants(rawQuery); 
 
-if (lowerQuery.length === 0) {
-resultList.innerHTML = '<div class="empty-msg">검색어를 입력하면 결과가 나타납니다.</div>';
-return;
-}
+    if (normalizedQuery.length === 0) {
+        resultList.innerHTML = '<div class="empty-msg">검색어를 입력하면 결과가 나타납니다.</div>';
+        return;
+    }
 
-const filtered = dataList.filter(item => (item.prefix || "").includes(lowerQuery) || (item.words || "").includes(query));
+    // 🚀 변환된 normalizedQuery로 필터링 진행
+    const filtered = dataList.filter(item => 
+        (item.prefix || "").includes(normalizedQuery) || 
+        (item.words || "").includes(query)
+    );
 
-filtered.sort((a, b) => {
-const lenA = (a.prefix || "").replace(/\s/g, '').length;
-const lenB = (b.prefix || "").replace(/\s/g, '').length;
-if (lenA !== lenB) return lenA - lenB;
-if (a.isUser !== b.isUser) return a.isUser ? 1 : -1; 
-return (a.prefix || "").localeCompare(b.prefix || "");
-});
+    filtered.sort((a, b) => {
+        const lenA = (a.prefix || "").replace(/\s/g, '').length;
+        const lenB = (b.prefix || "").replace(/\s/g, '').length;
+        if (lenA !== lenB) return lenA - lenB;
+        if (a.isUser !== b.isUser) return a.isUser ? 1 : -1; 
+        return (a.prefix || "").localeCompare(b.prefix || "");
+    });
 
-if (filtered.length === 0) {
-resultList.innerHTML = '<div class="empty-msg">일치하는 단어가 없습니다.</div>';
-return;
-}
+    if (filtered.length === 0) {
+        resultList.innerHTML = '<div class="empty-msg">일치하는 단어가 없습니다.</div>';
+        return;
+    }
 
-filtered.forEach(item => {
-const li = document.createElement('li');
-li.className = 'result-item';
-const categoryClass = item.isUser ? 'category user-added' : 'category';
-li.innerHTML = `
-                   <span class="prefix">${item.prefix}</span>
-                   <span class="words">${item.words}</span>
-                   <span class="${categoryClass}">${item.category}</span>
-               `;
-resultList.appendChild(li);
-});
+    filtered.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'result-item';
+        const categoryClass = item.isUser ? 'category user-added' : 'category';
+        li.innerHTML = `
+            <span class="prefix">${item.prefix}</span>
+            <span class="words">${item.words}</span>
+            <span class="${categoryClass}">${item.category}</span>
+        `;
+        resultList.appendChild(li);
+    });
 }
 
 searchInput.addEventListener('input', (e) => renderResults(e.target.value));
