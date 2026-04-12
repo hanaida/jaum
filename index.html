@@ -204,7 +204,7 @@ font-weight: bold;
 </div>
 
 <div class="ranking-container" id="rankingContainer">
-    <div class="ranking-title">🏆 단어 기여도 랭킹 (Top 5)</div>
+    <div class="ranking-title">단어 추가 랭킹</div>
     <ul class="ranking-list" id="rankingList">
         <li class="ranking-item" style="justify-content:center; color:#666;">데이터를 불러오는 중...</li>
     </ul>
@@ -4275,9 +4275,6 @@ function updateRankingUI() {
         li.className = 'ranking-item';
         
         let rankDisplay = `${index + 1}위`;
-        if (index === 0) rankDisplay = '🥇';
-        if (index === 1) rankDisplay = '🥈';
-        if (index === 2) rankDisplay = '🥉';
 
         li.innerHTML = `
             <div>
