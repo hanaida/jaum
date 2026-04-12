@@ -4461,6 +4461,7 @@ const rawData = `
 
 const dataMap = new Map();
 const userCounts = new Map(); 
+let anonymousCount = 0; // 🚀 새로 추가된 익명 카운트 변수
 
 function getPriority(category, isUser, nickname) {
     if (isUser && nickname === "갱생짐인") return 4;
@@ -4490,10 +4491,15 @@ function openUserModal(nickname) {
     const modalTitle = document.getElementById('modalTitle');
     const modalList = document.getElementById('modalList');
     
-    modalTitle.innerText = `${nickname}님이 추가한 단어`;
-    modalList.innerHTML = ''; // 기존 내용 초기화
+    // 익명일 경우 타이틀 변경
+    if(nickname === "익명") {
+        modalTitle.innerText = `익명`;
+    } else {
+        modalTitle.innerText = `${nickname}님이 추가한 단어`;
+    }
+    
+    modalList.innerHTML = ''; 
 
-    // dataList에서 해당 유저의 닉네임과 일치하는 단어들만 필터링
     const userWords = dataList.filter(item => item.isUser && item.nickname === nickname);
 
     userWords.forEach(item => {
@@ -4530,11 +4536,12 @@ function updateRankingUI() {
                              .sort((a, b) => b[1] - a[1])
                              .slice(0, 5);
 
-    if (sortedUsers.length === 0) {
+    if (sortedUsers.length === 0 && anonymousCount === 0) {
         rankingList.innerHTML = '<li class="ranking-item" style="justify-content:center; color:#666; cursor:default;">아직 등록된 랭킹이 없습니다.</li>';
         return;
     }
 
+    // Top 5 랭킹 출력
     sortedUsers.forEach((user, index) => {
         const [nickname, count] = user;
         const li = document.createElement('li');
@@ -4550,11 +4557,29 @@ function updateRankingUI() {
             <span class="ranking-count">${count}개</span>
         `;
         
-        // 🚀 클릭하면 모달 띄우기 이벤트 추가
         li.addEventListener('click', () => openUserModal(nickname));
-        
         rankingList.appendChild(li);
     });
+
+    // 익명 기여자 횟수 출력 (이모티콘 없이 깔끔하게 표시)
+    if (anonymousCount > 0) {
+        const li = document.createElement('li');
+        li.className = 'ranking-item';
+        li.style.borderTop = "1px dashed #444"; 
+        li.style.marginTop = "5px";
+        li.style.paddingTop = "12px";
+        
+        li.innerHTML = `
+            <div>
+                <span class="ranking-rank"></span>
+                <span class="ranking-name" style="color: #aaa;">익명</span>
+            </div>
+            <span class="ranking-count" style="color: #aaa;">${anonymousCount}개</span>
+        `;
+        
+        li.addEventListener('click', () => openUserModal("익명"));
+        rankingList.appendChild(li);
+    }
 }
 
 let currentCategory = "기타";
@@ -4577,23 +4602,37 @@ let dataList = Array.from(dataMap.values());
 
 onSnapshot(collection(db, "words"), (snapshot) => {
     snapshot.docChanges().forEach((change) => {
+        // 데이터가 새로 추가되거나 수정되었을 때
         if (change.type === "added" || change.type === "modified") {
             const data = change.doc.data();
+            
+            // 초성이나 단어가 비어있으면 무시
             if (!data.prefix || !data.word) return; 
+            
             const displayTag = `${data.category || "기타"}`;
             
+            // 로컬 데이터 맵에 단어 추가 또는 업데이트
             addOrUpdateWord(data.prefix, data.word, displayTag, true, data.nickname);
 
-            if (change.type === "added" && data.nickname && data.nickname !== "익명") {
-                const currentCount = userCounts.get(data.nickname) || 0;
-                userCounts.set(data.nickname, currentCount + 1);
+            // 🚀 새로 추가된 데이터일 때만 랭킹 카운트 계산
+            if (change.type === "added" && data.nickname) {
+                if (data.nickname === "익명") {
+                    anonymousCount++; // 익명 유저 횟수 증가
+                } else {
+                    const currentCount = userCounts.get(data.nickname) || 0;
+                    userCounts.set(data.nickname, currentCount + 1); // 특정 닉네임 횟수 증가
+                }
             }
         }
     });
 
+    // 맵 데이터를 배열로 변환해서 검색용 리스트 업데이트
     dataList = Array.from(dataMap.values());
+    
+    // UI에 바뀐 랭킹 바로 반영
     updateRankingUI();
 
+    // 사용자가 현재 검색 중이라면 검색 결과 화면도 즉시 갱신
     const currentQuery = document.getElementById('searchInput').value;
     if(currentQuery) renderResults(currentQuery);
 });
