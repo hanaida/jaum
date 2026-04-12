@@ -4653,14 +4653,21 @@ onSnapshot(collection(db, "words"), (snapshot) => {
 document.getElementById('addBtn').addEventListener('click', async () => {
     let nickname = document.getElementById('addNickname').value.trim(); 
     
-    // 🚀 등록할 때도 초성의 겹자음을 분리해서 저장
-    const rawPrefix = document.getElementById('addPrefix').value.replace(/\s/g, '');
+    // 🚀 한글(자음/모음/완성형), 영문, 숫자를 제외한 모든 문자(공백, 특수문자 등)를 제거하는 정규식
+    const cleanRegex = /[^ㄱ-ㅎㅏ-ㅣ가-힣a-zA-Z0-9]/g;
+
+    // 초성: 특수문자/공백 제거 후 겹자음 분리 적용
+    const rawPrefix = document.getElementById('addPrefix').value.replace(cleanRegex, '');
     const prefix = normalizeConsonants(rawPrefix);
     
-    const word = document.getElementById('addWord').value.replace(/\s/g, '');
+    // 단어: 특수문자/공백 제거
+    const word = document.getElementById('addWord').value.replace(cleanRegex, '');
     const category = document.getElementById('addCategory').value;
 
-    if (!prefix || !word) { alert("초성과 단어를 모두 입력해주세요!"); return; }
+    if (!prefix || !word) { 
+        alert("초성과 단어를 올바르게 입력해주세요! (특수문자 제외)"); 
+        return; 
+    }
     if (!category) { alert("범주를 선택해주세요!"); return; }
     if (!nickname) nickname = "익명";
 
