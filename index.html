@@ -4695,29 +4695,80 @@ document.getElementById('addBtn').addEventListener('click', async () => {
 const searchInput = document.getElementById('searchInput');
 const resultList = document.getElementById('resultList');
 
+// 범주의 첫 글자와 실제 범주명을 매핑 (기타 제외, 겹치는 첫 글자는 배열로 묶음)
+const categoryMap = {
+    '가': ['가전'], '고': ['고사성어'], '과': ['과일', '과학'],
+    '국': ['국가'], '날': ['날씨'], '도': ['도시'], '동': ['동물'],
+    '마': ['마피아42'], '명': ['명소', '명작'], '색': ['색깔'],
+    '속': ['속담'], '수': ['수학'], '스': ['스포츠'], '식': ['식물'],
+    '신': ['신체', '신화'], '악': ['악기'], '양': ['양념'],
+    '역': ['역사'], '영': ['영화'], '음': ['음악', '음료', '음식'],
+    '의': ['의류'], '장': ['장소'], '전': ['전통문화'], '지': ['지역'],
+    '직': ['직업'], '채': ['채소'], '천': ['천문현상'], '탈': ['탈것'],
+    '학': ['학용품'], '화': ['화폐단위']
+};
+
 function renderResults(query) {
     resultList.innerHTML = '';
     
-    // 🚀 공백을 제거한 검색어에 겹자음 분리 함수 적용
-    const rawQuery = query.toLowerCase().replace(/\s/g, '');
-    const normalizedQuery = normalizeConsonants(rawQuery); 
-
-    if (normalizedQuery.length === 0) {
+    // 빈 검색어 방지
+    if (query.trim().length === 0) {
         resultList.innerHTML = '<div class="empty-msg">검색어를 입력하면 결과가 나타납니다.</div>';
         return;
     }
 
-    // 🚀 변환된 normalizedQuery로 필터링 진행
-    const filtered = dataList.filter(item => 
-        (item.prefix || "").includes(normalizedQuery) || 
-        (item.words || "").includes(query)
-    );
+    let targetCategories = null;
+    let actualQuery = query;
 
+    // "식ㅅㄱㄴㅁ" 처럼 첫 글자가 완성형 한글(범주)이고, 뒤에 자음/알파벳/숫자 등이 오는 경우 판별
+    const isCategoryFilter = /^[가-힣][ㄱ-ㅎa-zA-Z0-9\s]+$/.test(query);
+
+    if (isCategoryFilter) {
+        const firstChar = query.charAt(0);
+        if (categoryMap[firstChar]) {
+            targetCategories = categoryMap[firstChar];
+            actualQuery = query.substring(1); // 범주 식별자를 제외한 실제 쿼리 ("ㅅㄱㄴㅁ")
+        }
+    }
+
+    // 공백 제거 및 겹자음 분리
+    const rawQuery = actualQuery.toLowerCase().replace(/\s/g, '');
+    const normalizedQuery = normalizeConsonants(rawQuery);
+
+    const filtered = dataList.filter(item => {
+        // 1. 범주 필터 적용
+        if (targetCategories) {
+            // 아이템의 범주가 검색된 범주 목록에 없으면서 "기타"도 아니면 필터링 제외
+            if (!targetCategories.includes(item.category) && item.category !== "기타") {
+                return false;
+            }
+        }
+
+        // 2. 검색어 매칭 로직
+        const matchesPrefix = (item.prefix || "").includes(normalizedQuery);
+        const matchesWord = (item.words || "").includes(actualQuery); 
+        const matchesOriginalWord = (item.words || "").includes(query); // 만일을 대비해 원본 쿼리도 체크
+
+        return matchesPrefix || matchesWord || matchesOriginalWord;
+    });
+
+    // 3. 정렬 로직
     filtered.sort((a, b) => {
         const lenA = (a.prefix || "").replace(/\s/g, '').length;
         const lenB = (b.prefix || "").replace(/\s/g, '').length;
+        
+        // ① 길이 비교 (단어 수가 적은 것부터)
         if (lenA !== lenB) return lenA - lenB;
+
+        // ② "기타" 범주를 동일 길이 내에서 맨 아래로 내림
+        const isOtherA = a.category === "기타";
+        const isOtherB = b.category === "기타";
+        if (isOtherA !== isOtherB) return isOtherA ? 1 : -1;
+
+        // ③ 유저가 추가한 단어/기본 단어 구분 (기존 로직)
         if (a.isUser !== b.isUser) return a.isUser ? 1 : -1; 
+        
+        // ④ 가나다 순서 
         return (a.prefix || "").localeCompare(b.prefix || "");
     });
 
